@@ -82,9 +82,9 @@ export default function OrderDetails() {
 
     const getStatusColors = (status: string) => {
         switch (status) {
-            case 'Completed': return { bg: `${theme.colors.primary}15`, text: theme.colors.primary, border: theme.colors.primary };
-            case 'Cancelled': return { bg: `${theme.colors.error}15`, text: theme.colors.error, border: theme.colors.error };
-            case 'In Progress': return { bg: `${theme.colors.primary}15`, text: theme.colors.primary, border: theme.colors.primary };
+            case 'Completed': return { bg: theme.dark ? 'rgba(0, 150, 255, 0.15)' : 'rgba(0, 150, 255, 0.15)', text: theme.colors.primary, border: theme.colors.primary };
+            case 'Cancelled': return { bg: theme.dark ? 'rgba(255, 59, 48, 0.15)' : 'rgba(255, 59, 48, 0.15)', text: theme.colors.error, border: theme.colors.error };
+            case 'In Progress': return { bg: theme.dark ? 'rgba(0, 150, 255, 0.15)' : 'rgba(0, 150, 255, 0.15)', text: theme.colors.primary, border: theme.colors.primary };
             default: return { bg: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', text: theme.colors.onSurfaceVariant, border: theme.colors.outline };
         }
     };

@@ -121,12 +121,12 @@ export default function BuyerTracking() {
         }
     };
 
-    const getStatusColor = (status: string) => {
+    const getStatusStyle = (status: string) => {
         switch (status) {
-            case 'Completed': return theme.colors.primary;
-            case 'Cancelled': return theme.colors.error;
-            case 'In Progress': return theme.colors.primary;
-            default: return theme.colors.onSurfaceVariant;
+            case 'Completed': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)' };
+            case 'Cancelled': return { color: theme.colors.error, bg: theme.dark ? 'rgba(255, 59, 48, 0.15)' : 'rgba(255, 59, 48, 0.1)' };
+            case 'In Progress': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)' };
+            default: return { color: theme.colors.onSurfaceVariant, bg: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' };
         }
     };
 
@@ -194,8 +194,8 @@ export default function BuyerTracking() {
                                         <Text style={styles.orderTitle}>{order.ProductName}</Text>
                                         <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>ID #{order.OrderID}</Text>
                                     </View>
-                                    <View style={[styles.chip, { borderColor: getStatusColor(order.Status), backgroundColor: `${getStatusColor(order.Status)}10`, paddingHorizontal: 10, justifyContent: 'center' }]}>
-                                        <Text style={{ color: getStatusColor(order.Status), fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>{order.Status}</Text>
+                                    <View style={[styles.chip, { borderColor: getStatusStyle(order.Status).bg === getStatusStyle(order.Status).bg ? getStatusStyle(order.Status).bg : getStatusStyle(order.Status).color, backgroundColor: getStatusStyle(order.Status).bg, paddingHorizontal: 10, justifyContent: 'center' }]}>
+                                        <Text style={{ color: getStatusStyle(order.Status).color, fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>{order.Status}</Text>
                                     </View>
                                 </View>
 

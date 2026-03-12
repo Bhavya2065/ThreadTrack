@@ -46,9 +46,11 @@ export default function AdminInventory() {
     if (loading) {
         return (
             <View style={styles.container}>
-                <Appbar.Header style={styles.appbarHeader}>
-                    <Appbar.Content title="Inventory" titleStyle={styles.appbarTitle} />
-                </Appbar.Header>
+                {!(Platform.OS === 'web' && width >= 768) && (
+                    <Appbar.Header style={styles.appbarHeader}>
+                        <Appbar.Content title="Inventory" titleStyle={styles.appbarTitle} />
+                    </Appbar.Header>
+                )}
                 <View style={{ flex: 1, padding: 16 }}>
                     <GlassCard style={{ height: 300, opacity: 0.5 }}><Text style={{ color: Tokens.colors.textMuted }}>Loading stocks...</Text></GlassCard>
                 </View>
@@ -58,23 +60,25 @@ export default function AdminInventory() {
 
     return (
         <View style={styles.container}>
-            <Appbar.Header style={styles.appbarHeader}>
-                <Appbar.Content title="Inventory" titleStyle={styles.appbarTitle} />
-                <Appbar.Action icon={() => <FileText size={20} color={theme.colors.primary} />} onPress={() => reportExporter.exportInventoryToCSV(materials)} />
-                {(Platform.OS !== 'web' || width < 768) && (
-                    <>
-                        <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
-                        <Appbar.Action
-                            icon="logout"
-                            color={theme.colors.onSurfaceVariant}
-                            onPress={() => {
-                                setToken(null, null);
-                                router.replace('/');
-                            }}
-                        />
-                    </>
-                )}
-            </Appbar.Header>
+            {!(Platform.OS === 'web' && width >= 768) && (
+                <Appbar.Header style={styles.appbarHeader}>
+                    <Appbar.Content title="Inventory" titleStyle={styles.appbarTitle} />
+                    <Appbar.Action icon={() => <FileText size={20} color={theme.colors.primary} />} onPress={() => reportExporter.exportInventoryToCSV(materials)} />
+                    {(Platform.OS !== 'web' || width < 768) && (
+                        <>
+                            <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
+                            <Appbar.Action
+                                icon="logout"
+                                color={theme.colors.onSurfaceVariant}
+                                onPress={() => {
+                                    setToken(null, null);
+                                    router.replace('/');
+                                }}
+                            />
+                        </>
+                    )}
+                </Appbar.Header>
+            )}
 
             <ScrollView
                 style={styles.content}

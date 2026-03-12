@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView } from 'react-native';
+import { View, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { Text, Appbar, List, Switch, useTheme, Divider } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Moon, Sun, Bell, Globe, Shield, LogOut } from 'lucide-react-native';
@@ -15,13 +15,16 @@ export default function SettingsScreen() {
     const theme = useTheme();
     const styles = createStyles(theme);
     const { isDarkMode, toggleTheme } = useAppTheme();
+    const { width } = useWindowDimensions();
 
     return (
         <View style={styles.container}>
-            <Appbar.Header style={styles.appbarHeader}>
-                <Appbar.BackAction onPress={() => router.back()} color={theme.colors.onSurfaceVariant} />
-                <Appbar.Content title="Settings" titleStyle={styles.appbarTitle} />
-            </Appbar.Header>
+            {!(Platform.OS === 'web' && width >= 768) && (
+                <Appbar.Header style={styles.appbarHeader}>
+                    <Appbar.BackAction onPress={() => router.back()} color={theme.colors.onSurfaceVariant} />
+                    <Appbar.Content title="Settings" titleStyle={styles.appbarTitle} />
+                </Appbar.Header>
+            )}
 
             <ScrollView style={styles.content}>
                 <View style={{ paddingTop: 12 }}>

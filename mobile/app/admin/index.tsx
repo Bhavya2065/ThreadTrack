@@ -87,9 +87,11 @@ export default function AdminAnalytics() {
     if (loading) {
         return (
             <View style={styles.container}>
-                <Appbar.Header style={styles.appbarHeader}>
-                    <Appbar.Content title="Factory Insights" titleStyle={styles.appbarTitle} />
-                </Appbar.Header>
+                {!(Platform.OS === 'web' && width >= 768) && (
+                    <Appbar.Header style={styles.appbarHeader}>
+                        <Appbar.Content title="Factory Insights" titleStyle={styles.appbarTitle} />
+                    </Appbar.Header>
+                )}
                 <ScrollView style={styles.content}>
                     <View style={styles.mainContent}>
                         <SkeletonLoader height={100} width="100%" style={{ marginBottom: 16 }} />
@@ -103,22 +105,24 @@ export default function AdminAnalytics() {
 
     return (
         <View style={styles.container}>
-            <Appbar.Header style={styles.appbarHeader}>
-                <Appbar.Content title="Insights" titleStyle={styles.appbarTitle} />
-                {(Platform.OS !== 'web' || width < 768) && (
-                    <>
-                        <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
-                        <Appbar.Action
-                            icon="logout"
-                            color={theme.colors.onSurfaceVariant}
-                            onPress={() => {
-                                setToken(null, null);
-                                router.replace('/');
-                            }}
-                        />
-                    </>
-                )}
-            </Appbar.Header>
+            {!(Platform.OS === 'web' && width >= 768) && (
+                <Appbar.Header style={styles.appbarHeader}>
+                    <Appbar.Content title="Insights" titleStyle={styles.appbarTitle} />
+                    {(Platform.OS !== 'web' || width < 768) && (
+                        <>
+                            <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
+                            <Appbar.Action
+                                icon="logout"
+                                color={theme.colors.onSurfaceVariant}
+                                onPress={() => {
+                                    setToken(null, null);
+                                    router.replace('/');
+                                }}
+                            />
+                        </>
+                    )}
+                </Appbar.Header>
+            )}
 
             <ScrollView
                 style={styles.content}

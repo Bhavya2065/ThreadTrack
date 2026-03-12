@@ -109,9 +109,11 @@ export default function AdminOrders() {
     if (loading) {
         return (
             <View style={styles.container}>
-                <Appbar.Header style={styles.appbarHeader}>
-                    <Appbar.Content title="Production" titleStyle={styles.appbarTitle} />
-                </Appbar.Header>
+                {!(Platform.OS === 'web' && width >= 768) && (
+                    <Appbar.Header style={styles.appbarHeader}>
+                        <Appbar.Content title="Production" titleStyle={styles.appbarTitle} />
+                    </Appbar.Header>
+                )}
                 <View style={{ flex: 1, justifyContent: 'center' }}>
                     <ActivityIndicator size="large" color={Tokens.colors.primary} />
                 </View>
@@ -121,22 +123,24 @@ export default function AdminOrders() {
 
     return (
         <View style={styles.container}>
-            <Appbar.Header style={styles.appbarHeader}>
-                <Appbar.Content title="Production" titleStyle={styles.appbarTitle} />
-                {(Platform.OS !== 'web' || width < 768) && (
-                    <>
-                        <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
-                        <Appbar.Action
-                            icon="logout"
-                            color={theme.colors.onSurfaceVariant}
-                            onPress={() => {
-                                setToken(null, null);
-                                router.replace('/');
-                            }}
-                        />
-                    </>
-                )}
-            </Appbar.Header>
+            {!(Platform.OS === 'web' && width >= 768) && (
+                <Appbar.Header style={styles.appbarHeader}>
+                    <Appbar.Content title="Production" titleStyle={styles.appbarTitle} />
+                    {(Platform.OS !== 'web' || width < 768) && (
+                        <>
+                            <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
+                            <Appbar.Action
+                                icon="logout"
+                                color={theme.colors.onSurfaceVariant}
+                                onPress={() => {
+                                    setToken(null, null);
+                                    router.replace('/');
+                                }}
+                            />
+                        </>
+                    )}
+                </Appbar.Header>
+            )}
 
             <View style={styles.searchContainer}>
                 <Searchbar

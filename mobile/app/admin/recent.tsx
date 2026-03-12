@@ -54,9 +54,11 @@ export default function AdminHistory() {
     if (loading) {
         return (
             <View style={styles.container}>
-                <Appbar.Header style={styles.appbarHeader}>
-                    <Appbar.Content title="Activity Logs" titleStyle={styles.appbarTitle} />
-                </Appbar.Header>
+                {!(Platform.OS === 'web' && width >= 768) && (
+                    <Appbar.Header style={styles.appbarHeader}>
+                        <Appbar.Content title="Activity Logs" titleStyle={styles.appbarTitle} />
+                    </Appbar.Header>
+                )}
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
@@ -66,23 +68,25 @@ export default function AdminHistory() {
 
     return (
         <View style={styles.container}>
-            <Appbar.Header style={styles.appbarHeader}>
-                <Appbar.Content title="Activity Logs" titleStyle={styles.appbarTitle} />
-                <Appbar.Action icon={() => <FileText size={20} color={theme.colors.primary} />} onPress={() => reportExporter.exportOrdersToPDF(history, "Order History Report")} />
-                {(Platform.OS !== 'web' || width < 768) && (
-                    <>
-                        <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
-                        <Appbar.Action
-                            icon="logout"
-                            color={theme.colors.onSurfaceVariant}
-                            onPress={() => {
-                                setToken(null, null);
-                                router.replace('/');
-                            }}
-                        />
-                    </>
-                )}
-            </Appbar.Header>
+            {!(Platform.OS === 'web' && width >= 768) && (
+                <Appbar.Header style={styles.appbarHeader}>
+                    <Appbar.Content title="Activity Logs" titleStyle={styles.appbarTitle} />
+                    <Appbar.Action icon={() => <FileText size={20} color={theme.colors.primary} />} onPress={() => reportExporter.exportOrdersToPDF(history, "Order History Report")} />
+                    {(Platform.OS !== 'web' || width < 768) && (
+                        <>
+                            <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
+                            <Appbar.Action
+                                icon="logout"
+                                color={theme.colors.onSurfaceVariant}
+                                onPress={() => {
+                                    setToken(null, null);
+                                    router.replace('/');
+                                }}
+                            />
+                        </>
+                    )}
+                </Appbar.Header>
+            )}
 
             <View style={styles.searchContainer}>
                 <Searchbar
