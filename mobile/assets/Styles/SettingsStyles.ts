@@ -12,11 +12,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '900',
-        letterSpacing: 2,
+        fontWeight: '700',
+        letterSpacing: 0.5,
         color: theme.colors.onSurface,
-        fontSize: 22,
-        textTransform: 'uppercase',
+        fontSize: 20,
     },
     content: {
         flex: 1,
@@ -43,9 +42,8 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     footerText: {
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '800',
-        letterSpacing: 2,
+        fontWeight: '600',
+        letterSpacing: 1,
         fontSize: 12,
-        textTransform: 'uppercase',
     }
 });

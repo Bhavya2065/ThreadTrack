@@ -15,11 +15,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '900',
-        letterSpacing: 2,
+        fontWeight: '700',
+        letterSpacing: 0.5,
         color: theme.colors.onSurface,
-        fontSize: 22,
-        textTransform: 'uppercase',
+        fontSize: 20,
     },
     searchContainer: {
         padding: Tokens.spacing.md,
@@ -43,12 +42,11 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         paddingTop: 0,
     },
     sectionTitle: {
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
         color: theme.colors.onSurface,
         marginBottom: Tokens.spacing.lg,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     card: {
         marginBottom: Tokens.spacing.md,
@@ -70,7 +68,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     cardTitleText: {
         fontSize: 16,
-        fontWeight: '800',
+        fontWeight: '600',
         color: theme.colors.onSurface,
         flex: 1,
     },
@@ -80,9 +78,8 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         fontWeight: '600',
     },
     statusText: {
-        fontWeight: '900',
-        fontSize: 10,
-        textTransform: 'uppercase',
+        fontWeight: '700',
+        fontSize: 11,
         letterSpacing: 0.5,
     },
     notesBox: {

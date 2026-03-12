@@ -12,11 +12,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '900',
-        letterSpacing: 2,
+        fontWeight: '700',
+        letterSpacing: 0.5,
         color: theme.colors.onSurface,
-        fontSize: 22,
-        textTransform: 'uppercase',
+        fontSize: 20,
     },
     content: {
         flex: 1,
@@ -34,11 +33,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     sectionTitle: {
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
         color: theme.colors.onSurface,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     card: {
         padding: Tokens.spacing.md,
@@ -56,14 +54,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginRight: 12,
     },
     inventoryName: {
-        fontWeight: '800',
+        fontWeight: '600',
         fontSize: 16,
         marginLeft: 12,
         color: theme.colors.onSurface,
     },
     stockValues: {
         textAlign: 'right',
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 14,
         color: theme.colors.onSurfaceVariant,
     },
@@ -86,7 +84,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     alertText: {
         marginLeft: 12,
         color: Tokens.colors.error,
-        fontWeight: '800',
+        fontWeight: '600',
         flex: 1,
         fontSize: 14,
     },

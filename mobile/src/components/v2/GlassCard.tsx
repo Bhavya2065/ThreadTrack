@@ -21,15 +21,14 @@ export const GlassCard: React.FC<GlassCardProps> = ({ children, style, blur = tr
             },
             style
         ]}>
-            <View style={styles.content}>
-                {children}
-            </View>
+            {children}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     card: {
+        padding: 16,
         borderRadius: 12, // More structured squared look
         overflow: 'hidden',
         ...Platform.select({
@@ -50,8 +49,5 @@ const styles = StyleSheet.create({
     },
     overlay: {
         ...StyleSheet.absoluteFillObject,
-    },
-    content: {
-        padding: 16,
     }
 });

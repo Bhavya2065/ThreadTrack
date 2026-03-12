@@ -30,7 +30,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     errorTitle: {
         textAlign: 'center',
         color: theme.colors.error,
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
     },
     errorText: {
@@ -48,11 +48,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '900',
-        letterSpacing: 2,
+        fontWeight: '700',
+        letterSpacing: 0.5,
         color: theme.colors.onSurface,
         fontSize: 20,
-        textTransform: 'uppercase',
     },
     content: {
         flex: 1,
@@ -82,20 +81,18 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     sectionTitle: {
         marginBottom: Tokens.spacing.lg,
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
         color: theme.colors.onSurface,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     label: {
-        fontSize: 11,
+        fontSize: 12,
         marginBottom: 8,
         marginTop: 14,
-        fontWeight: '800',
+        fontWeight: '600',
         color: theme.colors.onSurfaceVariant,
-        textTransform: 'uppercase',
-        letterSpacing: 1.5,
+        letterSpacing: 0.5,
     },
     orderSelection: {
         flexDirection: 'row',
@@ -121,12 +118,12 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: 10,
     },
     boldLabel: {
-        fontWeight: '800',
+        fontWeight: '600',
         color: theme.colors.onSurface,
     },
     remainingText: {
         color: theme.colors.primary,
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 16,
     },
     progressBarContainer: {
@@ -144,7 +141,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     completedHint: {
         marginTop: 10,
         color: Tokens.colors.success,
-        fontWeight: '800',
+        fontWeight: '600',
         textAlign: 'center',
         fontSize: 13,
     },

@@ -12,11 +12,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '900',
-        letterSpacing: 2,
+        fontWeight: '700',
+        letterSpacing: 0.5,
         color: theme.colors.onSurface,
-        fontSize: 22,
-        textTransform: 'uppercase',
+        fontSize: 20,
     },
     searchContainer: {
         padding: Tokens.spacing.md,
@@ -40,12 +39,11 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         paddingTop: 0,
     },
     sectionTitle: {
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
         color: theme.colors.onSurface,
         marginBottom: Tokens.spacing.md,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     card: {
         marginBottom: Tokens.spacing.lg,
@@ -74,16 +72,15 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: 4,
     },
     statusText: {
-        fontWeight: '900',
+        fontWeight: '700',
         color: theme.colors.primary,
         fontSize: 11,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
     unitsText: {
         color: theme.colors.onSurfaceVariant,
         fontSize: 12,
-        fontWeight: '800',
+        fontWeight: '600',
     },
     progressBar: {
         height: 4,
@@ -109,7 +106,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         borderColor: theme.colors.outline,
     },
     modalTitle: {
-        fontWeight: '900',
+        fontWeight: '700',
         color: theme.colors.error,
         marginBottom: Tokens.spacing.sm,
     },

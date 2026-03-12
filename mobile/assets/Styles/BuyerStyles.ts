@@ -30,7 +30,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     errorTitle: {
         textAlign: 'center',
         color: theme.colors.error,
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
     },
     errorText: {
@@ -47,11 +47,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '900',
-        letterSpacing: 2,
+        fontWeight: '700',
+        letterSpacing: 0.5,
         color: theme.colors.onSurface,
         fontSize: 20,
-        textTransform: 'uppercase',
     },
     content: {
         flex: 1,
@@ -63,11 +62,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         padding: Tokens.spacing.lg,
     },
     sectionTitle: {
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
         color: theme.colors.onSurface,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     headerRow: {
         flexDirection: 'row',
@@ -83,13 +81,12 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         borderColor: theme.colors.outline,
     },
     modalLabel: {
-        fontSize: 11,
+        fontSize: 12,
         marginBottom: 8,
         marginTop: 14,
-        fontWeight: '800',
+        fontWeight: '600',
         color: theme.colors.onSurfaceVariant,
-        textTransform: 'uppercase',
-        letterSpacing: 1.5,
+        letterSpacing: 0.5,
     },
     modalButtons: {
         flexDirection: 'row',
@@ -99,7 +96,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     card: {
         marginBottom: Tokens.spacing.lg,
-        padding: Tokens.spacing.lg,
+        padding: Tokens.spacing.md,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -111,7 +108,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     orderTitle: {
         flex: 1,
         fontSize: 20,
-        fontWeight: '900',
+        fontWeight: '700',
         color: theme.colors.onSurface,
         letterSpacing: -0.5,
     },
@@ -144,8 +141,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         fontSize: 12,
         marginLeft: 6,
         color: theme.colors.onSurface,
-        fontWeight: '800',
-        textTransform: 'uppercase',
+        fontWeight: '600',
         letterSpacing: 0.5,
     },
     progressContainer: {
@@ -172,7 +168,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     estText: {
         marginLeft: 10,
-        fontWeight: '800',
+        fontWeight: '600',
         color: theme.colors.primary,
         fontSize: 13,
     },
@@ -202,11 +198,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         borderColor: 'rgba(255, 171, 0, 0.15)',
     },
     notesTitle: {
-        fontWeight: '900',
+        fontWeight: '700',
         color: Tokens.colors.warning,
         fontSize: 13,
         marginBottom: 4,
-        textTransform: 'uppercase',
     },
     notesText: {
         color: theme.colors.onSurfaceVariant,
@@ -227,15 +222,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     productNameText: {
         fontSize: 15,
-        fontWeight: '800',
+        fontWeight: '600',
         color: theme.colors.onSurface,
     },
     availabilityText: {
-        fontSize: 10,
+        fontSize: 11,
         marginLeft: 0,
-        fontWeight: '900',
+        fontWeight: '600',
         marginTop: 2,
-        textTransform: 'uppercase',
     },
     noProductsWrapper: {
         padding: 24,

@@ -16,11 +16,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '900',
-        letterSpacing: 2,
+        fontWeight: '700',
+        letterSpacing: 0.5,
         color: theme.colors.onSurface,
-        fontSize: 22,
-        textTransform: 'uppercase',
+        fontSize: 20,
     },
     content: {
         flex: 1,
@@ -45,14 +44,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     productName: {
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 24,
         color: theme.colors.onSurface,
         letterSpacing: -0.5,
     },
     quantitySub: {
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '700',
+        fontWeight: '600',
         marginTop: 2,
         fontSize: 14,
     },
@@ -63,10 +62,9 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         borderWidth: 1,
     },
     statusText: {
-        fontWeight: '900',
-        fontSize: 10,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
+        fontWeight: '700',
+        fontSize: 11,
+        letterSpacing: 0.5,
     },
     divider: {
         marginVertical: Tokens.spacing.md,
@@ -91,15 +89,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     labelSmall: {
         color: theme.colors.onSurfaceVariant,
-        fontSize: 11,
-        fontWeight: '800',
-        textTransform: 'uppercase',
+        fontSize: 12,
+        fontWeight: '600',
         marginBottom: 4,
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
     bodyMedium: {
         color: theme.colors.onSurface,
-        fontWeight: '800',
+        fontWeight: '600',
         fontSize: 15,
     },
     progressContainer: {
@@ -118,7 +115,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     progressPercent: {
         color: theme.colors.primary,
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 24,
     },
     progressBar: {
@@ -130,7 +127,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         textAlign: 'right',
         marginTop: 10,
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '700',
+        fontWeight: '600',
         fontSize: 13,
     },
     notesCard: {
@@ -138,11 +135,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     notesTitle: {
         fontSize: 14,
-        fontWeight: '900',
+        fontWeight: '700',
         color: theme.colors.onSurface,
         marginBottom: 10,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
     notesText: {
         color: theme.colors.onSurfaceVariant,
@@ -152,11 +148,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     sectionTitle: {
         marginBottom: Tokens.spacing.lg,
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
         color: theme.colors.onSurface,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     timelineCard: {
         overflow: 'hidden',
@@ -199,7 +194,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: 6,
     },
     timelineQuantity: {
-        fontWeight: '900',
+        fontWeight: '700',
         color: theme.colors.primary,
         fontSize: 16,
     },

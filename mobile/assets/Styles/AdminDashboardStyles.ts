@@ -18,11 +18,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '900',
-        letterSpacing: 2,
+        fontWeight: '700',
+        letterSpacing: 0.5,
         color: theme.colors.onSurface,
-        fontSize: 22,
-        textTransform: 'uppercase',
+        fontSize: 20,
     },
     content: {
         flex: 1,
@@ -49,7 +48,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     kpiValue: {
         fontSize: 24,
-        fontWeight: '900',
+        fontWeight: '700',
         color: theme.colors.primary,
         marginVertical: 4,
         ...Platform.select({
@@ -59,19 +58,16 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         }),
     },
     kpiLabel: {
-        fontSize: 10,
+        fontSize: 12,
         color: theme.colors.onSurfaceVariant,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        fontWeight: '800',
+        fontWeight: '600',
     },
     sectionTitle: {
-        fontWeight: '900',
+        fontWeight: '700',
         fontSize: 18,
         marginBottom: Tokens.spacing.lg,
         color: theme.colors.onSurface,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     analyticsWrapper: {
         marginBottom: Tokens.spacing.xl,
@@ -87,10 +83,9 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     chartTitle: {
         marginLeft: Tokens.spacing.sm,
         color: theme.colors.onSurface,
-        fontWeight: '800',
+        fontWeight: '600',
         fontSize: 14,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
     chart: {
         marginVertical: Tokens.spacing.sm,
