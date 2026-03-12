@@ -19,8 +19,8 @@ const KPICard = ({ icon: Icon, label, value, color, index }: any) => {
         <TransitionView index={index} type="scale" style={styles.kpiCard}>
             <GlassCard style={styles.kpiCardInner}>
                 <Icon size={20} color={color} />
-                <Text style={[styles.kpiValue, { color }]}>{value}</Text>
-                <Text style={styles.kpiLabel}>{label}</Text>
+                <Text style={[styles.kpiValue, { color: 'black' }]}>{value}</Text>
+                <Text style={[styles.kpiLabel, { color: 'black' }]}>{label}</Text>
             </GlassCard>
         </TransitionView>
     );
