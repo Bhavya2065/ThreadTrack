@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { useTheme, Text, TouchableRipple, IconButton, Tooltip } from 'react-native-paper';
-import { TrendingUp, Package, ShoppingBag, History, Settings, LogOut, ChevronLeft, Menu } from 'lucide-react-native';
+import { TrendingUp, Package, ShoppingBag, History, Settings, LogOut, AlignLeft, Menu } from 'lucide-react-native';
 import { setToken } from '../../src/services/api';
 import { Tokens } from '../../src/theme/tokens';
 
@@ -52,7 +52,7 @@ export default function AdminLayout() {
                             rippleColor="rgba(0,0,0,0.1)"
                             style={[styles.collapseButton, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline }]}
                         >
-                            <ChevronLeft size={18} color={theme.colors.primary} />
+                            <AlignLeft size={18} color={theme.colors.primary} />
                         </TouchableRipple>
                     </View>
                 ) : (
