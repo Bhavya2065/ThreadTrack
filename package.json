@@ -1,0 +1,17 @@
+{
+  "name": "threadtrack-root",
+  "version": "1.0.0",
+  "description": "Root for ThreadTrack project services",
+  "scripts": {
+    "start": "start.bat",
+    "start:hidden": "powershell -ExecutionPolicy Bypass -File start-hidden.ps1",
+    "stop": "powershell -ExecutionPolicy Bypass -File stop-all.ps1",
+    "start:node": "cd backend-node && npm start",
+    "start:python": "cd backend-python && venn\\Scripts\\python.exe main.py",
+    "start:mobile": "cd mobile && npx expo start",
+    "install:all": "npm install --legacy-peer-deps && cd backend-node && npm install && cd ../mobile && npm install --legacy-peer-deps && cd ../backend-python && .\\venn\\Scripts\\pip.exe install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

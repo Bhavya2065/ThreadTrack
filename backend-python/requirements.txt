@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pymssql
+pydantic
+pydantic-settings
+pandas
