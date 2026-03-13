@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, ActivityIndicator, RefreshControl, useWindowDimensions, Platform, TouchableOpacity } from 'react-native';
-import { Text, Appbar, useTheme, Searchbar } from 'react-native-paper';
+import { Text, Appbar, useTheme, Searchbar, Button } from 'react-native-paper';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { orderService, setToken } from '../../src/services/api';
 import { FileText, Clock } from 'lucide-react-native';
@@ -71,7 +71,7 @@ export default function AdminHistory() {
             {!(Platform.OS === 'web' && width >= 768) && (
                 <Appbar.Header style={styles.appbarHeader}>
                     <Appbar.Content title="Activity Logs" titleStyle={styles.appbarTitle} />
-                    <Appbar.Action icon={() => <FileText size={20} color={theme.colors.primary} />} onPress={() => reportExporter.exportOrdersToPDF(history, "Order History Report")} />
+
                     {(Platform.OS !== 'web' || width < 768) && (
                         <>
                             <Appbar.Action
@@ -105,6 +105,18 @@ export default function AdminHistory() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Tokens.colors.primary} />}
             >
                 <View style={styles.mainContent}>
+                    <View style={styles.headerRow}>
+                        <Text variant="titleMedium" style={styles.sectionTitle}>Activity Summary</Text>
+                        <Button
+                            mode="text"
+                            icon={() => <FileText size={18} color={theme.colors.primary} />}
+                            onPress={() => reportExporter.exportOrdersToPDF(history, "Order History Report")}
+                            textColor={theme.colors.primary}
+                            labelStyle={{ fontWeight: '700', fontSize: 13 }}
+                        >
+                            Export PDF
+                        </Button>
+                    </View>
                     {filteredHistory.map((order, index) => (
                         <TransitionView key={order.OrderID} index={index}>
                             <TouchableOpacity

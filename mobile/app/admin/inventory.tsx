@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, RefreshControl, useWindowDimensions, Platform } from 'react-native';
+import { View, ScrollView, RefreshControl, useWindowDimensions, Platform, TouchableOpacity } from 'react-native';
 import { Text, ProgressBar, MD3Colors, Appbar, Button, useTheme } from 'react-native-paper';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Package, AlertTriangle, Settings, FileText } from 'lucide-react-native';
@@ -63,7 +63,7 @@ export default function AdminInventory() {
             {!(Platform.OS === 'web' && width >= 768) && (
                 <Appbar.Header style={styles.appbarHeader}>
                     <Appbar.Content title="Inventory" titleStyle={styles.appbarTitle} />
-                    <Appbar.Action icon={() => <FileText size={20} color={theme.colors.primary} />} onPress={() => reportExporter.exportInventoryToCSV(materials)} />
+
                     {(Platform.OS !== 'web' || width < 768) && (
                         <>
                             <Appbar.Action
@@ -87,14 +87,26 @@ export default function AdminInventory() {
                     <TransitionView index={0}>
                         <View style={styles.headerRow}>
                             <Text variant="titleMedium" style={styles.sectionTitle}>Stock Levels</Text>
-                            <Button
-                                mode="text"
-                                icon={() => <Settings size={16} color={theme.colors.primary} />}
-                                onPress={() => router.push('/admin/inventory_mgmt')}
-                                textColor={theme.colors.primary}
-                            >
-                                Thresholds
-                            </Button>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Button
+                                    mode="text"
+                                    icon={() => <FileText size={16} color={theme.colors.primary} />}
+                                    onPress={() => reportExporter.exportInventoryToPDF(materials, "Inventory Report")}
+                                    textColor={theme.colors.primary}
+                                    labelStyle={{ fontWeight: '700' }}
+                                >
+                                    PDF
+                                </Button>
+                                <Button
+                                    mode="text"
+                                    icon={() => <FileText size={16} color={theme.colors.primary} />}
+                                    onPress={() => reportExporter.exportInventoryToCSV(materials)}
+                                    textColor={theme.colors.primary}
+                                    labelStyle={{ fontWeight: '700' }}
+                                >
+                                    CSV
+                                </Button>
+                            </View>
                         </View>
                     </TransitionView>
 
@@ -112,7 +124,11 @@ export default function AdminInventory() {
                             {materials.map((item, index) => {
                                 const isLow = item.CurrentStock <= item.MinimumRequired;
                                 return (
-                                    <View key={item.MaterialID || index}>
+                                    <TouchableOpacity 
+                                        key={item.MaterialID || index} 
+                                        activeOpacity={0.7}
+                                        onPress={() => router.push('/admin/inventory_mgmt')}
+                                    >
                                         <View style={styles.inventoryItem}>
                                             <View style={styles.inventoryInfo}>
                                                 <Package size={20} color={isLow ? theme.colors.error : (index % 2 === 0 ? theme.colors.primary : theme.colors.secondary)} />
@@ -136,7 +152,7 @@ export default function AdminInventory() {
                                             color={isLow ? theme.colors.error : (index % 2 === 0 ? theme.colors.primary : theme.colors.secondary)}
                                             style={styles.progressBar}
                                         />
-                                    </View>
+                                    </TouchableOpacity>
                                 );
                             })}
                         </GlassCard>

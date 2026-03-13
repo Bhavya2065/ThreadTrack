@@ -41,11 +41,16 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         padding: Tokens.spacing.lg,
         paddingTop: 0,
     },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: Tokens.spacing.lg,
+    },
     sectionTitle: {
         fontWeight: '700',
         fontSize: 18,
         color: theme.colors.onSurface,
-        marginBottom: Tokens.spacing.lg,
         letterSpacing: 0.5,
     },
     card: {

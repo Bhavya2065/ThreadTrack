@@ -3,6 +3,58 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
 export const reportExporter = {
+    async exportInventoryToPDF(materials: any[], title: string) {
+        const html = `
+            <html>
+                <head>
+                    <style>
+                        body { font-family: 'Helvetica', sans-serif; padding: 20px; }
+                        h1 { color: #333; text-align: center; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                    </style>
+                </head>
+                <body>
+                    <h1>${title}</h1>
+                    <p>Generated on: ${new Date().toLocaleString()}</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Current Stock</th>
+                                <th>Unit</th>
+                                <th>Min Required</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${materials.map(m => `
+                                <tr>
+                                    <td>${m.Name}</td>
+                                    <td>${m.CurrentStock}</td>
+                                    <td>${m.Unit}</td>
+                                    <td>${m.MinimumRequired}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </body>
+            </html>
+        `;
+
+        if (Platform.OS === 'web') {
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(html);
+                printWindow.document.close();
+                printWindow.print();
+            }
+        } else {
+            const { uri } = await Print.printToFileAsync({ html });
+            await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+        }
+    },
+
     async exportOrdersToPDF(orders: any[], title: string) {
         const html = `
             <html>

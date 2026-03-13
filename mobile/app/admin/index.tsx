@@ -133,7 +133,7 @@ export default function AdminAnalytics() {
                         <KPICard index={0} icon={Package} label="Orders" value="156" color={theme.colors.primary} />
                         <KPICard index={1} icon={Zap} label="Efficiency" value="89%" color={theme.colors.secondary} />
                         <KPICard index={2} icon={Activity} label="Growth" value="+12%" color={theme.colors.tertiary} />
-                        <KPICard index={3} icon={AlertCircle} label="Alerts" value="3" color={theme.colors.error} />
+                        <KPICard index={3} icon={AlertCircle} label="Alerts" value="3" color={Tokens.colors.warning} />
                     </View>
 
                     {/* Analytics Section */}
