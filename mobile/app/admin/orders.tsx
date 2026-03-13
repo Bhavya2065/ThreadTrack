@@ -157,10 +157,10 @@ export default function AdminOrders() {
 
             <ScrollView
                 style={styles.content}
+                contentContainerStyle={filteredOrders.length === 0 ? { flexGrow: 1, justifyContent: 'center' } : null}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Tokens.colors.primary} />}
             >
                 <View style={styles.mainContent}>
-                    <Text variant="titleLarge" style={styles.sectionTitle}>Active Flows</Text>
                     {filteredOrders.map((order, index) => (
                         <TransitionView key={order.OrderID} index={index}>
                             <TouchableOpacity
@@ -209,6 +209,7 @@ export default function AdminOrders() {
                             icon={ShoppingBag}
                             title="No Orders"
                             message={searchQuery ? "Try a different search." : "No active production orders."}
+                            iconColor={Tokens.colors.primary}
                         />
                     )}
                 </View>

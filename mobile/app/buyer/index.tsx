@@ -173,6 +173,7 @@ export default function BuyerTracking() {
 
             <ScrollView
                 style={styles.content}
+                contentContainerStyle={orders.length === 0 ? { flexGrow: 1, justifyContent: 'center' } : null}
                 refreshControl={
                     <RefreshControl
                         refreshing={submitting}
@@ -259,6 +260,7 @@ export default function BuyerTracking() {
                             icon={ShoppingBag}
                             title="No Orders Yet"
                             message="Create your first bulk order to start tracking."
+                            iconColor={Tokens.colors.primary}
                         />
                     )}
                 </View>

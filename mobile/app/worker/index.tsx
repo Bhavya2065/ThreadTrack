@@ -169,7 +169,7 @@ export default function WorkerInput() {
                 }} />
             </Appbar.Header>
 
-            <ScrollView style={styles.content}>
+            <ScrollView style={styles.content} contentContainerStyle={orders.length === 0 ? { flexGrow: 1, justifyContent: 'center' } : null}>
                 <View style={styles.mainContent}>
                     <TransitionView index={0}>
                         <GlassCard>
