@@ -193,7 +193,6 @@ export default function BuyerTracking() {
                                 <View style={styles.cardHeader}>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.orderTitle}>{order.ProductName}</Text>
-                                        <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>ID #{order.OrderID}</Text>
                                     </View>
                                     <View style={[styles.chip, { borderColor: getStatusStyle(order.Status).bg === getStatusStyle(order.Status).bg ? getStatusStyle(order.Status).bg : getStatusStyle(order.Status).color, backgroundColor: getStatusStyle(order.Status).bg, paddingHorizontal: 10, justifyContent: 'center' }]}>
                                         <Text style={{ color: getStatusStyle(order.Status).color, fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>{order.Status}</Text>

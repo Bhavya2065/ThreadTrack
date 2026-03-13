@@ -49,7 +49,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     kpiValue: {
         fontSize: 24,
         fontWeight: '700',
-        color: theme.colors.primary,
+        color: theme.colors.onSurface,
         marginVertical: 4,
         ...Platform.select({
             web: {

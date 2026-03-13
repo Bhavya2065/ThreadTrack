@@ -66,7 +66,6 @@ export default function AdminInventory() {
                     <Appbar.Action icon={() => <FileText size={20} color={theme.colors.primary} />} onPress={() => reportExporter.exportInventoryToCSV(materials)} />
                     {(Platform.OS !== 'web' || width < 768) && (
                         <>
-                            <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
                             <Appbar.Action
                                 icon="logout"
                                 color={theme.colors.onSurfaceVariant}

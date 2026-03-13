@@ -19,8 +19,8 @@ const KPICard = ({ icon: Icon, label, value, color, index }: any) => {
         <TransitionView index={index} type="scale" style={styles.kpiCard}>
             <GlassCard style={styles.kpiCardInner}>
                 <Icon size={20} color={color} />
-                <Text style={[styles.kpiValue, { color: 'black' }]}>{value}</Text>
-                <Text style={[styles.kpiLabel, { color: 'black' }]}>{label}</Text>
+                <Text style={styles.kpiValue}>{value}</Text>
+                <Text style={styles.kpiLabel}>{label}</Text>
             </GlassCard>
         </TransitionView>
     );
@@ -110,7 +110,6 @@ export default function AdminAnalytics() {
                     <Appbar.Content title="Insights" titleStyle={styles.appbarTitle} />
                     {(Platform.OS !== 'web' || width < 768) && (
                         <>
-                            <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
                             <Appbar.Action
                                 icon="logout"
                                 color={theme.colors.onSurfaceVariant}

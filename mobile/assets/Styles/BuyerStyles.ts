@@ -108,7 +108,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     orderTitle: {
         flex: 1,
         fontSize: 20,
-        fontWeight: '700',
+        fontWeight: '600',
         color: theme.colors.onSurface,
         letterSpacing: -0.5,
     },

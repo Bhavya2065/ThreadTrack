@@ -158,7 +158,6 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     timelineItem: {
         flexDirection: 'row',
-        minHeight: 90,
     },
     timelineIndicator: {
         alignItems: 'center',
@@ -169,7 +168,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        marginTop: 10,
+        marginTop: 14,
         backgroundColor: theme.colors.primary,
         ...Platform.select({
             web: {
@@ -185,7 +184,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     timelineContent: {
         flex: 1,
-        paddingBottom: 28,
+        paddingVertical: 10,
     },
     timelineHeader: {
         flexDirection: 'row',

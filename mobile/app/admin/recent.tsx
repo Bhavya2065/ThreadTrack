@@ -74,7 +74,6 @@ export default function AdminHistory() {
                     <Appbar.Action icon={() => <FileText size={20} color={theme.colors.primary} />} onPress={() => reportExporter.exportOrdersToPDF(history, "Order History Report")} />
                     {(Platform.OS !== 'web' || width < 768) && (
                         <>
-                            <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
                             <Appbar.Action
                                 icon="logout"
                                 color={theme.colors.onSurfaceVariant}

@@ -128,7 +128,6 @@ export default function AdminOrders() {
                     <Appbar.Content title="Production" titleStyle={styles.appbarTitle} />
                     {(Platform.OS !== 'web' || width < 768) && (
                         <>
-                            <Appbar.Action icon="cog" color={theme.colors.onSurfaceVariant} onPress={() => router.push('/settings')} />
                             <Appbar.Action
                                 icon="logout"
                                 color={theme.colors.onSurfaceVariant}
@@ -169,7 +168,7 @@ export default function AdminOrders() {
                             >
                                 <GlassCard style={styles.card}>
                                     <View style={styles.cardTitleRow}>
-                                        <Text style={styles.cardTitleText}>#{order.OrderID} {order.ProductName}</Text>
+                                        <Text style={styles.cardTitleText}>{order.ProductName}</Text>
 
                                     </View>
 

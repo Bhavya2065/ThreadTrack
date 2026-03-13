@@ -56,7 +56,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     cardTitleText: {
         fontSize: 16,
-        fontWeight: '700',
+        fontWeight: '600',
         color: theme.colors.onSurface,
         flex: 1,
     },

@@ -138,8 +138,8 @@ export default function OrderDetails() {
                                     <View style={styles.infoItem}>
                                         <Package size={18} color={theme.colors.tertiary} />
                                         <View style={styles.infoTextContainer}>
-                                            <Text style={styles.labelSmall}>Product ID</Text>
-                                            <Text style={styles.bodyMedium}>{order.ProductID || 'N/A'}</Text>
+                                            <Text style={styles.labelSmall}>Product Name</Text>
+                                            <Text style={styles.bodyMedium}>{order.ProductName || 'N/A'}</Text>
                                         </View>
                                     </View>
                                 </View>
