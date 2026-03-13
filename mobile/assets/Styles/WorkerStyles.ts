@@ -153,6 +153,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     logIcon: {
         marginTop: 12,
+        marginLeft: 16,
     },
     noLogsText: {
         textAlign: 'center',

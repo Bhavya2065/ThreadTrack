@@ -7,14 +7,15 @@ interface EmptyStateProps {
     icon: LucideIcon;
     title: string;
     message: string;
+    iconColor?: string;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ icon: Icon, title, message }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ icon: Icon, title, message, iconColor }) => {
     const theme = useTheme();
 
     return (
         <View style={styles.container}>
-            <Icon size={64} color={theme.colors.outline} style={styles.icon} />
+            <Icon size={64} color={iconColor || theme.colors.outline} style={[styles.icon, iconColor ? { opacity: 1 } : null]} />
             <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]}>
                 {title}
             </Text>

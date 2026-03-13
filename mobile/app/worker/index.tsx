@@ -58,8 +58,15 @@ export default function WorkerInput() {
 
             const activeOrders = ordersRes.data.filter((o: any) => o.Status !== 'Completed');
             setOrders(activeOrders);
-            if (activeOrders.length > 0 && !selectedOrderId) {
-                setSelectedOrderId(activeOrders[0].OrderID);
+
+            // Auto-shift: if nothing selected, or if current selection is no longer active, select first available
+            if (activeOrders.length > 0) {
+                const currentStillActive = activeOrders.some((o: any) => o.OrderID === selectedOrderId);
+                if (!selectedOrderId || !currentStillActive) {
+                    setSelectedOrderId(activeOrders[0].OrderID);
+                }
+            } else {
+                setSelectedOrderId(null);
             }
         } catch (error: any) {
             if (error.response?.status === 401) {
@@ -166,109 +173,120 @@ export default function WorkerInput() {
                 <View style={styles.mainContent}>
                     <TransitionView index={0}>
                         <GlassCard>
-                            <View style={styles.inputHeader}>
-                                <ClipboardList size={20} color={theme.colors.primary} />
-                                <Text style={styles.sectionTitle}>Log Active Order</Text>
-                            </View>
-
-                            <Text style={styles.label}>Select Order</Text>
-                            <View style={styles.orderSelection}>
-                                {offlineCount > 0 && (
-                                    <View style={{ backgroundColor: 'rgba(255, 171, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255, 171, 0, 0.2)' }}>
-                                        <Text style={{ color: theme.colors.tertiary, fontSize: 12, fontWeight: '600' }}>{offlineCount} log(s) pending sync</Text>
-                                        <Button mode="text" compact onPress={fetchData} loading={submitting} textColor={theme.colors.tertiary}>Sync</Button>
+                            {orders.length > 0 ? (
+                                <>
+                                    <View style={styles.inputHeader}>
+                                        <ClipboardList size={20} color={theme.colors.primary} />
+                                        <Text style={styles.sectionTitle}>Log Active Order</Text>
                                     </View>
-                                )}
-                                {orders.map(order => (
-                                    <Button
-                                        key={order.OrderID}
-                                        mode={selectedOrderId === order.OrderID ? "contained" : "outlined"}
-                                        onPress={() => {
-                                            Haptics.selectionAsync();
-                                            setSelectedOrderId(order.OrderID);
-                                        }}
-                                        style={[styles.orderChip, selectedOrderId === order.OrderID && { borderColor: theme.colors.primary, borderWidth: 1.5 }]}
-                                        labelStyle={{ fontSize: 11, fontWeight: '700' }}
+
+                                    <Text style={styles.label}>Select Order</Text>
+                                    <View style={styles.orderSelection}>
+                                        {offlineCount > 0 && (
+                                            <View style={{ backgroundColor: 'rgba(255, 171, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255, 171, 0, 0.2)' }}>
+                                                <Text style={{ color: theme.colors.tertiary, fontSize: 12, fontWeight: '600' }}>{offlineCount} log(s) pending sync</Text>
+                                                <Button mode="text" compact onPress={fetchData} loading={submitting} textColor={theme.colors.tertiary}>Sync</Button>
+                                            </View>
+                                        )}
+                                        {orders.map(order => (
+                                            <Button
+                                                key={order.OrderID}
+                                                mode={selectedOrderId === order.OrderID ? "contained" : "outlined"}
+                                                onPress={() => {
+                                                    Haptics.selectionAsync();
+                                                    setSelectedOrderId(order.OrderID);
+                                                }}
+                                                style={[styles.orderChip, selectedOrderId === order.OrderID && { borderColor: theme.colors.primary, borderWidth: 1.5 }]}
+                                                labelStyle={{ fontSize: 11, fontWeight: '700' }}
+                                                textColor={theme.colors.onSurface}
+                                                buttonColor={selectedOrderId === order.OrderID ? 'rgba(0, 97, 255, 0.1)' : 'transparent'}
+                                            >
+                                                #{order.OrderID}
+                                            </Button>
+                                        ))}
+                                    </View>
+
+                                    {selectedOrderId && (
+                                        <View style={styles.progressSection}>
+                                            {(() => {
+                                                const order = orders.find(o => o.OrderID === selectedOrderId);
+                                                const target = order?.Quantity || 0;
+                                                const produced = order?.ProducedQuantity || 0;
+                                                const remaining = Math.max(0, target - produced);
+                                                const progress = target > 0 ? produced / target : 0;
+
+                                                return (
+                                                    <>
+                                                        <View style={styles.progressTextRow}>
+                                                            <Text style={{ color: theme.colors.onSurfaceVariant }}>Progress: <Text style={styles.boldLabel}>{produced} / {target}</Text></Text>
+                                                            <Text style={styles.remainingText}>{remaining} left</Text>
+                                                        </View>
+                                                        <View style={styles.progressBarContainer}>
+                                                            <View style={[
+                                                                styles.progressBarFill,
+                                                                {
+                                                                    width: `${Math.min(100, progress * 100)}%`,
+                                                                    backgroundColor: progress >= 1 ? theme.colors.primary : theme.colors.primary,
+                                                                    shadowColor: theme.colors.primary,
+                                                                    shadowOffset: { width: 0, height: 0 },
+                                                                    shadowOpacity: 0.8,
+                                                                    shadowRadius: 10,
+                                                                }
+                                                            ]} />
+                                                        </View>
+                                                        {remaining === 0 && (
+                                                            <Text style={styles.completedHint}>Ready for review</Text>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
+                                        </View>
+                                    )}
+
+                                    <TextInput
+                                        label="Product"
+                                        value={orders.find(o => o.OrderID === selectedOrderId)?.ProductName || 'Select an order...'}
+                                        mode="outlined"
+                                        disabled
+                                        style={styles.input}
+                                        outlineColor={theme.colors.outline}
+                                        activeOutlineColor={theme.colors.primary}
                                         textColor={theme.colors.onSurface}
-                                        buttonColor={selectedOrderId === order.OrderID ? 'rgba(0, 97, 255, 0.1)' : 'transparent'}
+                                    />
+
+                                    <TextInput
+                                        label="Units Completed"
+                                        value={quantity}
+                                        onChangeText={setQuantity}
+                                        mode="outlined"
+                                        keyboardType="numeric"
+                                        style={styles.input}
+                                        placeholder="0"
+                                        outlineColor={theme.colors.outline}
+                                        activeOutlineColor={theme.colors.primary}
+                                        textColor={theme.colors.onSurface}
+                                    />
+
+                                    <Button
+                                        mode="contained"
+                                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleSubmit(); }}
+                                        style={styles.submitButton}
+                                        icon="check"
+                                        loading={submitting}
+                                        disabled={submitting || (orders.find(o => o.OrderID === selectedOrderId)?.Quantity - orders.find(o => o.OrderID === selectedOrderId)?.ProducedQuantity <= 0)}
+                                        labelStyle={{ fontWeight: '900' }}
                                     >
-                                        #{order.OrderID}
+                                        Log Production
                                     </Button>
-                                ))}
-                            </View>
-
-                            {selectedOrderId && (
-                                <View style={styles.progressSection}>
-                                    {(() => {
-                                        const order = orders.find(o => o.OrderID === selectedOrderId);
-                                        const target = order?.Quantity || 0;
-                                        const produced = order?.ProducedQuantity || 0;
-                                        const remaining = Math.max(0, target - produced);
-                                        const progress = target > 0 ? produced / target : 0;
-
-                                        return (
-                                            <>
-                                                <View style={styles.progressTextRow}>
-                                                    <Text style={{ color: theme.colors.onSurfaceVariant }}>Progress: <Text style={styles.boldLabel}>{produced} / {target}</Text></Text>
-                                                    <Text style={styles.remainingText}>{remaining} left</Text>
-                                                </View>
-                                                <View style={styles.progressBarContainer}>
-                                                    <View style={[
-                                                        styles.progressBarFill,
-                                                        {
-                                                            width: `${Math.min(100, progress * 100)}%`,
-                                                            backgroundColor: progress >= 1 ? theme.colors.primary : theme.colors.primary,
-                                                            shadowColor: theme.colors.primary,
-                                                            shadowOffset: { width: 0, height: 0 },
-                                                            shadowOpacity: 0.8,
-                                                            shadowRadius: 10,
-                                                        }
-                                                    ]} />
-                                                </View>
-                                                {remaining === 0 && (
-                                                    <Text style={styles.completedHint}>Ready for review</Text>
-                                                )}
-                                            </>
-                                        );
-                                    })()}
-                                </View>
+                                </>
+                            ) : (
+                                <EmptyState
+                                    icon={CheckCircle}
+                                    title="All Orders Completed"
+                                    message="Great job! You have finished all active orders. New orders will appear here once assigned."
+                                    iconColor={Tokens.colors.success}
+                                />
                             )}
-
-                            <TextInput
-                                label="Product"
-                                value={orders.find(o => o.OrderID === selectedOrderId)?.ProductName || 'Select an order...'}
-                                mode="outlined"
-                                disabled
-                                style={styles.input}
-                                outlineColor={theme.colors.outline}
-                                activeOutlineColor={theme.colors.primary}
-                                textColor={theme.colors.onSurface}
-                            />
-
-                            <TextInput
-                                label="Units Completed"
-                                value={quantity}
-                                onChangeText={setQuantity}
-                                mode="outlined"
-                                keyboardType="numeric"
-                                style={styles.input}
-                                placeholder="0"
-                                outlineColor={theme.colors.outline}
-                                activeOutlineColor={theme.colors.primary}
-                                textColor={theme.colors.onSurface}
-                            />
-
-                            <Button
-                                mode="contained"
-                                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleSubmit(); }}
-                                style={styles.submitButton}
-                                icon="check"
-                                loading={submitting}
-                                disabled={submitting || (orders.find(o => o.OrderID === selectedOrderId)?.Quantity - orders.find(o => o.OrderID === selectedOrderId)?.ProducedQuantity <= 0)}
-                                labelStyle={{ fontWeight: '900' }}
-                            >
-                                Log Production
-                            </Button>
                         </GlassCard>
                     </TransitionView>
 
