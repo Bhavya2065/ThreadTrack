@@ -286,7 +286,7 @@ export default function InventoryManagement() {
                                             </Text>
 
                                             <View style={styles.metaRow}>
-                                                {p.Price && <Text style={styles.priceText}>${p.Price}</Text>}
+                                                {p.Price && <Text style={styles.priceText}>₹{p.Price}</Text>}
                                                 <Text style={isAvailable ? styles.availableText : styles.outOfStockText}>
                                                     ● {isAvailable ? `${canProduce} potential` : 'Out of Stock'}
                                                 </Text>
@@ -377,7 +377,7 @@ export default function InventoryManagement() {
                     </View>
 
                     <TextInput label="Qty per Unit" value={productForm.quantityPerUnit} onChangeText={t => setProductForm({ ...productForm, quantityPerUnit: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Unit Price ($)" value={productForm.price} onChangeText={t => setProductForm({ ...productForm, price: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
+                    <TextInput label="Unit Price (₹)" value={productForm.price} onChangeText={t => setProductForm({ ...productForm, price: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
 
                     <View style={styles.switchRow}>
                         <Text style={styles.label}>Publish to Catalog</Text>
