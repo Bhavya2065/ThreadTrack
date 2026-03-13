@@ -1,5 +1,5 @@
-import { StyleSheet, Platform } from 'react-native';
-import { MD3Theme, MD3Colors } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
+import { MD3Theme } from 'react-native-paper';
 import { Tokens } from '../../src/theme/tokens';
 
 export const createStyles = (theme: MD3Theme) => StyleSheet.create({
@@ -69,6 +69,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: Tokens.spacing.lg,
+        gap: 8,
     },
     input: {
         marginBottom: Tokens.spacing.md,
@@ -80,11 +81,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         borderRadius: Tokens.borderRadius.lg,
     },
     sectionTitle: {
-        marginBottom: Tokens.spacing.lg,
         fontWeight: '700',
         fontSize: 18,
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
+    },
+    historySection: {
+        marginTop: Tokens.spacing.xl,
+        marginBottom: Tokens.spacing.md,
     },
     label: {
         fontSize: 12,
@@ -101,8 +105,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         gap: 10,
     },
     orderChip: {
-        backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
         borderColor: theme.colors.outline,
+        borderWidth: 1,
+        minWidth: 60,
     },
     progressSection: {
         marginBottom: Tokens.spacing.xl,

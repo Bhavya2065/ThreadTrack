@@ -168,7 +168,7 @@ export default function WorkerInput() {
                         <GlassCard>
                             <View style={styles.inputHeader}>
                                 <ClipboardList size={20} color={theme.colors.primary} />
-                                <Text style={styles.sectionTitle}> Log Active Order</Text>
+                                <Text style={styles.sectionTitle}>Log Active Order</Text>
                             </View>
 
                             <Text style={styles.label}>Select Order</Text>
@@ -187,10 +187,10 @@ export default function WorkerInput() {
                                             Haptics.selectionAsync();
                                             setSelectedOrderId(order.OrderID);
                                         }}
-                                        style={styles.orderChip}
+                                        style={[styles.orderChip, selectedOrderId === order.OrderID && { borderColor: theme.colors.primary, borderWidth: 1.5 }]}
                                         labelStyle={{ fontSize: 11, fontWeight: '700' }}
-                                        textColor={selectedOrderId === order.OrderID ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
-                                        buttonColor={selectedOrderId === order.OrderID ? theme.colors.primary : 'transparent'}
+                                        textColor={theme.colors.onSurface}
+                                        buttonColor={selectedOrderId === order.OrderID ? 'rgba(0, 97, 255, 0.1)' : 'transparent'}
                                     >
                                         #{order.OrderID}
                                     </Button>
@@ -273,7 +273,7 @@ export default function WorkerInput() {
                     </TransitionView>
 
                     <TransitionView index={1}>
-                        <Text style={styles.sectionTitle}>Contribution History</Text>
+                        <Text style={[styles.sectionTitle, styles.historySection]}>Contribution History</Text>
                         <GlassCard style={{ padding: 0 }}>
                             {logs.map((log, index) => (
                                 <View key={log.LogID || index}>
