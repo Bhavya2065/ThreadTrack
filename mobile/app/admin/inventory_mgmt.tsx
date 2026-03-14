@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
-import { Text, Button, Portal, Modal, TextInput, MD3Colors, Appbar, IconButton, Chip, useTheme } from 'react-native-paper';
+import { View, ScrollView, ActivityIndicator, Alert, Platform, useWindowDimensions } from 'react-native';
+import { Text, Button, Portal, Modal, TextInput, MD3Colors, Appbar, IconButton, Chip, useTheme, RadioButton, Menu } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Plus, Trash2, Edit3, Package, Layers } from 'lucide-react-native';
 import { inventoryService } from '../../src/services/api';
@@ -8,12 +8,12 @@ import { createStyles } from '../../assets/Styles/InventoryMgmtStyles';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { EmptyState } from '../../src/components/EmptyState';
-import { Tokens } from '../../src/theme/tokens';
 
 export default function InventoryManagement() {
     const router = useRouter();
     const theme = useTheme();
     const styles = createStyles(theme);
+    const { width } = useWindowDimensions();
     const [loading, setLoading] = useState(true);
     const [materials, setMaterials] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
@@ -22,6 +22,7 @@ export default function InventoryManagement() {
     const [isStockModalVisible, setIsStockModalVisible] = useState(false);
     const [isProductModalVisible, setIsProductModalVisible] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [isMaterialMenuVisible, setIsMaterialMenuVisible] = useState(false);
 
     const [materialForm, setMaterialForm] = useState({ name: '', stock: '', unit: '', min: '' });
     const [stockForm, setStockForm] = useState({ id: null as number | null, name: '', amount: '' });
@@ -216,7 +217,7 @@ export default function InventoryManagement() {
                 <View style={styles.mainContent}>
                     <View style={styles.sectionHeader}>
                         <Text variant="titleLarge" style={styles.sectionTitle}>Raw Materials</Text>
-                        <Button mode="contained" icon="plus" onPress={() => setIsMaterialModalVisible(true)} labelStyle={{ fontWeight: '800' }}>Add</Button>
+                        <Button mode="contained" icon="plus" onPress={() => setIsMaterialModalVisible(true)} labelStyle={{ fontWeight: '500' }}>Add</Button>
                     </View>
 
                     {materials.length === 0 && (
@@ -257,7 +258,7 @@ export default function InventoryManagement() {
 
                     <View style={[styles.sectionHeader, { marginTop: 24 }]}>
                         <Text variant="titleLarge" style={styles.sectionTitle}>Catalog</Text>
-                        <Button mode="contained" icon="plus" onPress={() => { resetProductForm(); setIsProductModalVisible(true); }} labelStyle={{ fontWeight: '800' }}>Add</Button>
+                        <Button mode="contained" icon="plus" onPress={() => { resetProductForm(); setIsProductModalVisible(true); }} labelStyle={{ fontWeight: '500' }}>Add</Button>
                     </View>
 
                     {products.length === 0 && (
@@ -332,7 +333,7 @@ export default function InventoryManagement() {
                     />
                     <View style={styles.modalButtons}>
                         <Button onPress={() => setIsStockModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>Cancel</Button>
-                        <Button mode="contained" onPress={handleAddStock} loading={submitting} labelStyle={{ fontWeight: '800' }}>Confirm Update</Button>
+                        <Button mode="contained" onPress={handleAddStock} loading={submitting} labelStyle={{ fontWeight: '500' }}>Confirm Update</Button>
                     </View>
                 </Modal>
             </Portal>
@@ -347,7 +348,7 @@ export default function InventoryManagement() {
                     <TextInput label="Alert Threshold" value={materialForm.min} onChangeText={t => setMaterialForm({ ...materialForm, min: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
                     <View style={styles.modalButtons}>
                         <Button onPress={() => setIsMaterialModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>Cancel</Button>
-                        <Button mode="contained" onPress={handleCreateMaterial} loading={submitting} labelStyle={{ fontWeight: '800' }}>Create</Button>
+                        <Button mode="contained" onPress={handleCreateMaterial} loading={submitting} labelStyle={{ fontWeight: '500' }}>Create</Button>
                     </View>
                 </Modal>
             </Portal>
@@ -356,44 +357,98 @@ export default function InventoryManagement() {
             <Portal>
                 <Modal visible={isProductModalVisible} onDismiss={() => setIsProductModalVisible(false)} contentContainerStyle={styles.modal}>
                     <Text variant="headlineSmall" style={styles.modalTitle}>{productForm.id ? 'Edit Entry' : 'New Catalog Item'}</Text>
-                    <TextInput label="Product Name" value={productForm.name} onChangeText={t => setProductForm({ ...productForm, name: t })} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
+                    {!productForm.id && (
+                        <TextInput label="Product Name" value={productForm.name} onChangeText={t => setProductForm({ ...productForm, name: t })} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
+                    )}
 
                     <Text style={styles.modalSubTitle}>Base Material</Text>
-                    <View style={styles.selectionWrapper}>
-                        {materials.map(m => (
-                            <Chip
-                                key={m.MaterialID}
-                                selected={productForm.materialId === m.MaterialID.toString()}
-                                onPress={() => setProductForm({ ...productForm, materialId: m.MaterialID.toString() })}
-                                style={styles.selectionItem}
-                                mode="outlined"
-                                showSelectedOverlay
-                                selectedColor={theme.colors.primary}
-                                textStyle={{ color: productForm.materialId === m.MaterialID.toString() ? theme.colors.primary : theme.colors.onSurfaceVariant }}
-                            >
-                                {m.Name}
-                            </Chip>
-                        ))}
-                    </View>
+                    <Menu
+                        visible={isMaterialMenuVisible}
+                        onDismiss={() => setIsMaterialMenuVisible(false)}
+                        anchor={
+                            <View style={{ width: '100%' }}>
+                                <TextInput
+                                    label="Select Material"
+                                    value={materials.find(m => m.MaterialID.toString() === productForm.materialId)?.Name || ''}
+                                    mode="outlined"
+                                    editable={false}
+                                    right={<TextInput.Icon icon={isMaterialMenuVisible ? "chevron-up" : "chevron-down"} onPress={() => setIsMaterialMenuVisible(true)} />}
+                                    style={styles.input}
+                                    outlineColor={theme.colors.outline}
+                                    activeOutlineColor={theme.colors.primary}
+                                    textColor={theme.colors.onSurface}
+                                    onPressIn={() => setIsMaterialMenuVisible(true)}
+                                />
+                            </View>
+                        }
+                        contentStyle={{ 
+                            backgroundColor: theme.colors.surface, 
+                            borderRadius: 12, 
+                            paddingVertical: 8,
+                            width: width * 0.8, // Approximation for modal width
+                            maxWidth: 500
+                        }}
+                    >
+                        <Text style={{ 
+                            paddingHorizontal: 16, 
+                            paddingVertical: 12, 
+                            fontSize: 14, 
+                            fontWeight: '600', 
+                            color: theme.colors.onSurfaceVariant 
+                        }}>
+                            Base Material
+                        </Text>
+                        <ScrollView style={{ maxHeight: 250 }}>
+                            {materials.map(m => {
+                                const isSelected = productForm.materialId === m.MaterialID.toString();
+                                return (
+                                    <Menu.Item
+                                        key={m.MaterialID}
+                                        onPress={() => {
+                                            setProductForm({ ...productForm, materialId: m.MaterialID.toString() });
+                                            setIsMaterialMenuVisible(false);
+                                        }}
+                                        title={m.Name}
+                                        leadingIcon={isSelected ? "check-circle" : "circle-outline"}
+                                        style={{ 
+                                            backgroundColor: isSelected ? (theme.dark ? 'rgba(0, 212, 255, 0.1)' : 'rgba(0, 212, 255, 0.05)') : 'transparent',
+                                            marginHorizontal: 8,
+                                            borderRadius: 8,
+                                            height: 48
+                                        }}
+                                        titleStyle={{ 
+                                            color: isSelected ? theme.colors.primary : theme.colors.onSurface,
+                                            fontWeight: isSelected ? '600' : '400',
+                                            fontSize: 15
+                                        }}
+                                    />
+                                );
+                            })}
+                        </ScrollView>
+                    </Menu>
 
                     <TextInput label="Qty per Unit" value={productForm.quantityPerUnit} onChangeText={t => setProductForm({ ...productForm, quantityPerUnit: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
                     <TextInput label="Unit Price (₹)" value={productForm.price} onChangeText={t => setProductForm({ ...productForm, price: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
 
-                    <View style={styles.switchRow}>
-                        <Text style={styles.label}>Publish to Catalog</Text>
-                        <Button
-                            mode={productForm.isActive ? 'contained' : 'outlined'}
-                            onPress={() => setProductForm({ ...productForm, isActive: !productForm.isActive })}
-                            compact
-                            labelStyle={{ fontWeight: '900' }}
-                        >
-                            {productForm.isActive ? 'LIVE' : 'HIDDEN'}
-                        </Button>
+                    <View style={{ marginTop: 10 }}>
+                        <Text style={styles.label}>Publish Status</Text>
+                        <RadioButton.Group onValueChange={value => setProductForm({ ...productForm, isActive: value === 'live' })} value={productForm.isActive ? 'live' : 'hidden'}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}>
+                                    <RadioButton value="live" />
+                                    <Text style={{ color: theme.colors.onSurface }}>Live</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <RadioButton value="hidden" />
+                                    <Text style={{ color: theme.colors.onSurface }}>Hidden</Text>
+                                </View>
+                            </View>
+                        </RadioButton.Group>
                     </View>
 
                     <View style={styles.modalButtons}>
                         <Button onPress={() => setIsProductModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>Cancel</Button>
-                        <Button mode="contained" onPress={handleSaveProduct} loading={submitting} labelStyle={{ fontWeight: '800' }}>Save Changes</Button>
+                        <Button mode="contained" onPress={handleSaveProduct} loading={submitting} labelStyle={{ fontWeight: '500' }}>Save Changes</Button>
                     </View>
                 </Modal>
             </Portal>

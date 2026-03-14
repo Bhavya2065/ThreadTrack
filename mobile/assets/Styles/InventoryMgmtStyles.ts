@@ -12,7 +12,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '700',
+        fontWeight: '600',
         letterSpacing: 0.5,
         color: theme.colors.onSurface,
         fontSize: 20,
@@ -33,7 +33,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.md,
     },
     sectionTitle: {
-        fontWeight: '700',
+        fontWeight: '600',
         fontSize: 18,
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
@@ -124,7 +124,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         backgroundColor: 'transparent',
     },
     modalTitle: {
-        fontWeight: '700',
+        fontWeight: '600',
         color: theme.colors.onSurface,
         fontSize: 20,
         marginBottom: Tokens.spacing.sm,
@@ -156,6 +156,6 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     label: {
         fontSize: 16,
         color: theme.colors.onSurface,
-        fontWeight: '700',
+        fontWeight: '400',
     }
 });
