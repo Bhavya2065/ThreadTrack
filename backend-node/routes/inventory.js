@@ -14,12 +14,13 @@ router.get('/materials', auth(), async (req, res) => {
                     SELECT SUM((o.Quantity - COALESCE(prod.ProducedQty, 0)) * p.MaterialQuantityPerUnit)
                     FROM Orders o
                     JOIN Products p ON o.ProductID = p.ProductID
+                    JOIN ProductMaterials pm ON p.ProductID = pm.ProductID
                     LEFT JOIN (
                         SELECT OrderID, SUM(QuantityProduced) as ProducedQty
                         FROM ProductionLogs
                         GROUP BY OrderID
                     ) prod ON o.OrderID = prod.OrderID
-                    WHERE p.BaseMaterialID = rm.MaterialID
+                    WHERE pm.MaterialID = rm.MaterialID
                     AND o.Status NOT IN ('Completed', 'Cancelled')
                 ), 0) as ReservedStock
             FROM RawMaterials rm
@@ -96,7 +97,7 @@ router.delete('/materials/:id', auth(['Admin']), async (req, res) => {
         // Check if material is being used by products
         const checkResult = await pool.request()
             .input('id', sql.Int, id)
-            .query('SELECT COUNT(*) as count FROM Products WHERE BaseMaterialID = @id');
+            .query('SELECT COUNT(*) as count FROM ProductMaterials WHERE MaterialID = @id');
 
         if (checkResult.recordset[0].count > 0) {
             return res.status(400).json({ error: 'Cannot delete material: It is being used by existing products.' });
@@ -148,15 +149,23 @@ router.get('/products', auth(), async (req, res) => {
         const pool = await poolPromise;
         const isAdmin = req.user.role === 'Admin' ? 1 : 0;
 
-
         const result = await pool.request()
             .input('isUserAdmin', sql.Bit, isAdmin)
-            .query('SELECT * FROM Products WHERE ISNULL(IsActive, 1) = 1 OR @isUserAdmin = 1');
+            .query(`
+                SELECT p.*, 
+                    (SELECT MaterialID FROM ProductMaterials pm WHERE pm.ProductID = p.ProductID FOR JSON PATH) as MaterialIDs
+                FROM Products p 
+                WHERE ISNULL(p.IsActive, 1) = 1 OR @isUserAdmin = 1
+            `);
 
+        // Parse MaterialIDs from JSON string if necessary
+        const products = result.recordset.map(p => ({
+            ...p,
+            MaterialIDs: p.MaterialIDs ? JSON.parse(p.MaterialIDs).map(m => m.MaterialID) : []
+        }));
 
-        res.json(result.recordset);
+        res.json(products);
     } catch (err) {
-
         res.status(500).json({ error: err.message });
     }
 });
@@ -164,21 +173,39 @@ router.get('/products', auth(), async (req, res) => {
 // Create New Product (Admin only)
 router.post('/products', auth(['Admin']), async (req, res) => {
     try {
-        const { productName, baseMaterialId, materialQuantityPerUnit, price, imageUrl } = req.body;
-        if (!productName || !baseMaterialId || !materialQuantityPerUnit) {
-            return res.status(400).json({ error: 'Product name, material ID, and quantity per unit are required' });
+        const { productName, materialIds, materialQuantityPerUnit, price, imageUrl } = req.body;
+        if (!productName || !materialIds || !Array.isArray(materialIds) || materialIds.length === 0 || !materialQuantityPerUnit) {
+            return res.status(400).json({ error: 'Product name, at least one material ID, and quantity per unit are required' });
         }
 
         const pool = await poolPromise;
-        await pool.request()
-            .input('name', sql.NVarChar, productName)
-            .input('materialId', sql.Int, baseMaterialId)
-            .input('qty', sql.Float, materialQuantityPerUnit)
-            .input('price', sql.Decimal(10, 2), price || null)
-            .input('imageUrl', sql.NVarChar, imageUrl || null)
-            .query('INSERT INTO Products (ProductName, BaseMaterialID, MaterialQuantityPerUnit, Price, ImageURL, IsActive) VALUES (@name, @materialId, @qty, @price, @imageUrl, 1)');
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
 
-        res.status(201).json({ message: 'Product created successfully' });
+        try {
+            const productResult = await transaction.request()
+                .input('name', sql.NVarChar, productName)
+                .input('materialId', sql.Int, materialIds[0]) // Still keep the first one in BaseMaterialID for backward compatibility
+                .input('qty', sql.Float, materialQuantityPerUnit)
+                .input('price', sql.Decimal(10, 2), price || null)
+                .input('imageUrl', sql.NVarChar, imageUrl || null)
+                .query('INSERT INTO Products (ProductName, BaseMaterialID, MaterialQuantityPerUnit, Price, ImageURL, IsActive) OUTPUT INSERTED.ProductID VALUES (@name, @materialId, @qty, @price, @imageUrl, 1)');
+
+            const productId = productResult.recordset[0].ProductID;
+
+            for (const mId of materialIds) {
+                await transaction.request()
+                    .input('pId', sql.Int, productId)
+                    .input('mId', sql.Int, mId)
+                    .query('INSERT INTO ProductMaterials (ProductID, MaterialID) VALUES (@pId, @mId)');
+            }
+
+            await transaction.commit();
+            res.status(201).json({ message: 'Product created successfully' });
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -188,33 +215,48 @@ router.post('/products', auth(['Admin']), async (req, res) => {
 router.put('/products/:id', auth(['Admin']), async (req, res) => {
     try {
         const { id } = req.params;
-        const { productName, baseMaterialId, materialQuantityPerUnit, price, imageUrl, isActive } = req.body;
+        const { productName, materialIds, materialQuantityPerUnit, price, imageUrl, isActive } = req.body;
 
         const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .input('name', sql.NVarChar, productName)
-            .input('materialId', sql.Int, baseMaterialId)
-            .input('qty', sql.Float, materialQuantityPerUnit)
-            .input('price', sql.Decimal(10, 2), price)
-            .input('imageUrl', sql.NVarChar, imageUrl)
-            .input('isActive', sql.Bit, isActive !== undefined ? isActive : 1)
-            .query(`
-                UPDATE Products 
-                SET ProductName = COALESCE(@name, ProductName),
-                    BaseMaterialID = COALESCE(@materialId, BaseMaterialID),
-                    MaterialQuantityPerUnit = COALESCE(@qty, MaterialQuantityPerUnit),
-                    Price = @price,
-                    ImageURL = @imageUrl,
-                    IsActive = @isActive
-                WHERE ProductID = @id
-            `);
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
 
-        if (result.rowsAffected[0] === 0) {
-            return res.status(404).json({ error: 'Product not found' });
+        try {
+            await transaction.request()
+                .input('id', sql.Int, id)
+                .input('name', sql.NVarChar, productName)
+                .input('materialId', sql.Int, Array.isArray(materialIds) && materialIds.length > 0 ? materialIds[0] : null)
+                .input('qty', sql.Float, materialQuantityPerUnit)
+                .input('price', sql.Decimal(10, 2), price)
+                .input('imageUrl', sql.NVarChar, imageUrl)
+                .input('isActive', sql.Bit, isActive !== undefined ? isActive : 1)
+                .query(`
+                    UPDATE Products 
+                    SET ProductName = COALESCE(@name, ProductName),
+                        BaseMaterialID = COALESCE(@materialId, BaseMaterialID),
+                        MaterialQuantityPerUnit = COALESCE(@qty, MaterialQuantityPerUnit),
+                        Price = @price,
+                        ImageURL = @imageUrl,
+                        IsActive = @isActive
+                    WHERE ProductID = @id
+                `);
+
+            if (Array.isArray(materialIds)) {
+                await transaction.request().input('id', sql.Int, id).query('DELETE FROM ProductMaterials WHERE ProductID = @id');
+                for (const mId of materialIds) {
+                    await transaction.request()
+                        .input('pId', sql.Int, id)
+                        .input('mId', sql.Int, mId)
+                        .query('INSERT INTO ProductMaterials (ProductID, MaterialID) VALUES (@pId, @mId)');
+                }
+            }
+
+            await transaction.commit();
+            res.json({ message: 'Product updated successfully' });
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
         }
-
-        res.json({ message: 'Product updated successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -54,6 +54,31 @@ async function runMigrations() {
             END
         `);
 
+        // 4. Create ProductMaterials table for multiple materials support
+        console.log('Creating ProductMaterials table...');
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID('ProductMaterials') AND type = 'U')
+            BEGIN
+                CREATE TABLE ProductMaterials (
+                    ProductMaterialID INT PRIMARY KEY IDENTITY(1,1),
+                    ProductID INT FOREIGN KEY REFERENCES Products(ProductID) ON DELETE CASCADE,
+                    MaterialID INT FOREIGN KEY REFERENCES RawMaterials(MaterialID) ON DELETE CASCADE,
+                    UNIQUE(ProductID, MaterialID)
+                );
+
+                -- Migrate existing data from Products.BaseMaterialID
+                INSERT INTO ProductMaterials (ProductID, MaterialID)
+                SELECT ProductID, BaseMaterialID 
+                FROM Products 
+                WHERE BaseMaterialID IS NOT NULL 
+                AND NOT EXISTS (
+                    SELECT 1 FROM ProductMaterials pm 
+                    WHERE pm.ProductID = Products.ProductID 
+                    AND pm.MaterialID = Products.BaseMaterialID
+                );
+            END
+        `);
+
         console.log('✅ Migrations completed successfully');
         process.exit(0);
     } catch (err) {

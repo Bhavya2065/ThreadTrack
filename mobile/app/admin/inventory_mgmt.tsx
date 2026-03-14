@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, ActivityIndicator, Alert, Platform, useWindowDimensions } from 'react-native';
+import { View, ScrollView, ActivityIndicator, Alert, Platform, useWindowDimensions, Pressable } from 'react-native';
 import { Text, Button, Portal, Modal, TextInput, MD3Colors, Appbar, IconButton, Chip, useTheme, RadioButton, Menu } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Plus, Trash2, Edit3, Package, Layers } from 'lucide-react-native';
@@ -30,7 +30,7 @@ export default function InventoryManagement() {
     const [productForm, setProductForm] = useState({
         id: null as number | null,
         name: '',
-        materialId: '',
+        materialIds: [] as string[],
         quantityPerUnit: '',
         price: '',
         imageUrl: '',
@@ -104,8 +104,7 @@ export default function InventoryManagement() {
                 await inventoryService.deleteMaterial(id);
                 fetchData();
             } catch (error: any) {
-                const msg = error.response?.data?.error || 'Failed to delete material.';
-                Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Error', msg);
+                Alert.alert('Error', error.response?.data?.error || 'Failed to delete material.');
             }
         };
 
@@ -122,14 +121,14 @@ export default function InventoryManagement() {
     };
 
     const handleSaveProduct = async () => {
-        if (!productForm.name || !productForm.materialId || !productForm.quantityPerUnit) {
-            Alert.alert('Error', 'Name, material, and quantity are required.');
+        if (!productForm.name || !productForm.materialIds || productForm.materialIds.length === 0 || !productForm.quantityPerUnit) {
+            Alert.alert('Error', 'Name, at least one material, and quantity are required.');
             return;
         }
         setSubmitting(true);
         const data = {
             productName: productForm.name,
-            baseMaterialId: parseInt(productForm.materialId),
+            materialIds: productForm.materialIds.map(id => parseInt(id)),
             materialQuantityPerUnit: parseFloat(productForm.quantityPerUnit),
             price: productForm.price ? parseFloat(productForm.price) : null,
             imageUrl: productForm.imageUrl || null,
@@ -157,9 +156,8 @@ export default function InventoryManagement() {
             try {
                 await inventoryService.deleteProduct(id);
                 fetchData();
-            } catch (error: any) {
-                const msg = error.response?.data?.error || 'Failed to delete product.';
-                Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Error', msg);
+            } catch (error) {
+                Alert.alert('Error', 'Failed to delete product.');
             }
         };
 
@@ -176,17 +174,17 @@ export default function InventoryManagement() {
     };
 
     const resetProductForm = () => {
-        setProductForm({ id: null, name: '', materialId: '', quantityPerUnit: '', price: '', imageUrl: '', isActive: true });
+        setProductForm({ id: null, name: '', materialIds: [], quantityPerUnit: '', price: '', imageUrl: '', isActive: true });
     };
 
     const openEditProduct = (p: any) => {
         setProductForm({
             id: p.ProductID,
             name: p.ProductName,
-            materialId: p.BaseMaterialID.toString(),
+            materialIds: p.MaterialIDs ? p.MaterialIDs.map((id: any) => id.toString()) : [],
             quantityPerUnit: p.MaterialQuantityPerUnit.toString(),
-            price: p.Price?.toString() || '',
-            imageUrl: p.ImageURL || '',
+            price: p.Price ? p.Price.toString() : '',
+            imageUrl: p.ImageUrl || '',
             isActive: p.IsActive
         });
         setIsProductModalVisible(true);
@@ -220,27 +218,29 @@ export default function InventoryManagement() {
                         <Button mode="contained" icon="plus" onPress={() => setIsMaterialModalVisible(true)} labelStyle={{ fontWeight: '500' }}>Add</Button>
                     </View>
 
-                    {materials.length === 0 && (
-                        <EmptyState icon={Layers} title="No Materials" message="Add base materials to start production." />
-                    )}
-
-                    {materials.map((m, index) => (
-                        <TransitionView key={m.MaterialID} index={index}>
-                            <GlassCard style={styles.itemCard}>
+                    <View style={{ gap: 10, marginBottom: 30 }}>
+                        {materials.length === 0 && !loading && (
+                            <EmptyState icon={Layers} title="No Materials" message="Add raw materials to track stock." />
+                        )}
+                        {materials.map((m) => (
+                            <GlassCard key={m.MaterialID} style={styles.itemCard}>
                                 <View style={styles.cardRow}>
                                     <View style={styles.cardCol}>
-                                        <Text style={[styles.bold, { fontSize: 16 }]}>{m.Name}</Text>
-                                        <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13, marginTop: 4 }}>
-                                            Available: <Text style={{ color: theme.colors.primary, fontWeight: '800' }}>{m.CurrentStock} {m.Unit}</Text>
-                                        </Text>
+                                        <View style={styles.titleRow}>
+                                            <Text style={styles.bold}>{m.Name}</Text>
+                                            <View style={m.CurrentStock <= m.MinStockThreshold ? styles.inactiveChip : styles.activeChip}>
+                                                <Text style={styles.chipText}>{m.CurrentStock <= m.MinStockThreshold ? 'LOW' : 'DECENT'}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.metaRow}>
+                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>In Stock: {m.CurrentStock} {m.Unit}</Text>
+                                            <Text style={{ color: theme.colors.error, fontSize: 13 }}>Reserve: {m.ReservedStock}</Text>
+                                        </View>
                                     </View>
                                     <View style={styles.actionRow}>
                                         <IconButton
                                             icon={() => <Plus size={22} color={theme.colors.primary} />}
-                                            onPress={() => {
-                                                setStockForm({ id: m.MaterialID, name: m.Name, amount: '' });
-                                                setIsStockModalVisible(true);
-                                            }}
+                                            onPress={() => { setStockForm({ id: m.MaterialID, name: m.Name, amount: '' }); setIsStockModalVisible(true); }}
                                             size={22}
                                             style={{ margin: 0 }}
                                         />
@@ -253,45 +253,52 @@ export default function InventoryManagement() {
                                     </View>
                                 </View>
                             </GlassCard>
-                        </TransitionView>
-                    ))}
+                        ))}
+                    </View>
 
-                    <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+                    <View style={styles.sectionHeader}>
                         <Text variant="titleLarge" style={styles.sectionTitle}>Catalog</Text>
                         <Button mode="contained" icon="plus" onPress={() => { resetProductForm(); setIsProductModalVisible(true); }} labelStyle={{ fontWeight: '500' }}>Add</Button>
                     </View>
 
-                    {products.length === 0 && (
+                    {products.length === 0 && !loading && (
                         <EmptyState icon={Package} title="No Products" message="Create your product catalog here." />
                     )}
 
-                    {products.map((p, index) => {
-                        const material = materials.find(m => m.MaterialID === p.BaseMaterialID);
-                        const canProduce = material ? Math.floor(material.CurrentStock / p.MaterialQuantityPerUnit) : 0;
-                        const isAvailable = canProduce > 0;
+                    {products.map((p) => {
+                        const productMaterials = materials.filter(m => p.MaterialIDs?.includes(m.MaterialID));
+                        let canProduce = Infinity;
+                        if (productMaterials.length > 0) {
+                            productMaterials.forEach(m => {
+                                const potential = Math.floor(m.CurrentStock / p.MaterialQuantityPerUnit);
+                                if (potential < canProduce) canProduce = potential;
+                            });
+                        } else {
+                            canProduce = 0;
+                        }
+                        const isAvailable = canProduce > 0 && canProduce !== Infinity;
+                        if (canProduce === Infinity) canProduce = 0;
 
                         return (
-                            <TransitionView key={p.ProductID} index={index}>
+                            <TransitionView key={p.ProductID}>
                                 <GlassCard style={styles.itemCard}>
                                     <View style={styles.cardRow}>
                                         <View style={styles.cardCol}>
                                             <View style={styles.titleRow}>
-                                                <Text style={[styles.bold, { fontSize: 16 }]}>{p.ProductName}</Text>
-                                                <View style={[p.IsActive ? styles.activeChip : styles.inactiveChip, { paddingHorizontal: 6, borderRadius: 4 }]}>
-                                                    <Text style={styles.chipText}>{p.IsActive ? 'Live' : 'Hidden'}</Text>
+                                                <Text style={styles.bold}>{p.ProductName}</Text>
+                                                <View style={p.IsActive ? styles.activeChip : styles.inactiveChip}>
+                                                    <Text style={styles.chipText}>{p.IsActive ? 'LIVE' : 'HIDDEN'}</Text>
                                                 </View>
                                             </View>
-
-                                            <Text style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
-                                                Base: <Text style={styles.bold}>{material?.Name || 'Unknown'}</Text> ({p.MaterialQuantityPerUnit}/unit)
-                                            </Text>
-
                                             <View style={styles.metaRow}>
-                                                {p.Price && <Text style={styles.priceText}>₹{p.Price}</Text>}
+                                                <Text style={styles.priceText}>₹{p.Price}</Text>
                                                 <Text style={isAvailable ? styles.availableText : styles.outOfStockText}>
-                                                    ● {isAvailable ? `${canProduce} potential` : 'Out of Stock'}
+                                                    {canProduce} potential
                                                 </Text>
                                             </View>
+                                            <Text style={{ marginTop: 4, fontSize: 12, color: theme.colors.onSurfaceVariant }}>
+                                                Base: {productMaterials.map(m => m.Name).join(', ') || 'N/A'} ({p.MaterialQuantityPerUnit}/unit)
+                                            </Text>
                                         </View>
                                         <View style={styles.actionRow}>
                                             <IconButton
@@ -338,7 +345,6 @@ export default function InventoryManagement() {
                 </Modal>
             </Portal>
 
-            {/* Material Modal */}
             <Portal>
                 <Modal visible={isMaterialModalVisible} onDismiss={() => setIsMaterialModalVisible(false)} contentContainerStyle={styles.modal}>
                     <Text variant="headlineSmall" style={styles.modalTitle}>New Material</Text>
@@ -353,79 +359,164 @@ export default function InventoryManagement() {
                 </Modal>
             </Portal>
 
-            {/* Product Modal */}
             <Portal>
                 <Modal visible={isProductModalVisible} onDismiss={() => setIsProductModalVisible(false)} contentContainerStyle={styles.modal}>
                     <Text variant="headlineSmall" style={styles.modalTitle}>{productForm.id ? 'Edit Entry' : 'New Catalog Item'}</Text>
-                    {!productForm.id && (
-                        <TextInput label="Product Name" value={productForm.name} onChangeText={t => setProductForm({ ...productForm, name: t })} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    )}
+                    <TextInput
+                        label="Product Name"
+                        value={productForm.name}
+                        onChangeText={t => setProductForm({ ...productForm, name: t })}
+                        mode="outlined"
+                        style={styles.input}
+                        outlineColor={theme.colors.outline}
+                        activeOutlineColor={theme.colors.primary}
+                        textColor={theme.colors.onSurface}
+                        disabled={!!productForm.id}
+                    />
 
-                    <Text style={styles.modalSubTitle}>Base Material</Text>
-                    <Menu
-                        visible={isMaterialMenuVisible}
-                        onDismiss={() => setIsMaterialMenuVisible(false)}
-                        anchor={
-                            <View style={{ width: '100%' }}>
-                                <TextInput
-                                    label="Select Material"
-                                    value={materials.find(m => m.MaterialID.toString() === productForm.materialId)?.Name || ''}
-                                    mode="outlined"
-                                    editable={false}
-                                    right={<TextInput.Icon icon={isMaterialMenuVisible ? "chevron-up" : "chevron-down"} onPress={() => setIsMaterialMenuVisible(true)} />}
-                                    style={styles.input}
-                                    outlineColor={theme.colors.outline}
-                                    activeOutlineColor={theme.colors.primary}
-                                    textColor={theme.colors.onSurface}
-                                    onPressIn={() => setIsMaterialMenuVisible(true)}
+                    <View style={{ width: '100%', marginBottom: 16 }}>
+                        <Menu
+                            visible={isMaterialMenuVisible}
+                            onDismiss={() => setIsMaterialMenuVisible(false)}
+                            anchor={
+                                <Pressable
+                                    onPress={() => setIsMaterialMenuVisible(true)}
+                                    style={{
+                                        borderWidth: 1,
+                                        borderColor: theme.colors.outline,
+                                        borderRadius: 4,
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 14,
+                                        minHeight: 56,
+                                        justifyContent: 'center',
+                                        backgroundColor: 'transparent',
+                                        width: '100%'
+                                    }}
+                                >
+                                    <Text style={{
+                                        position: 'absolute',
+                                        top: -9,
+                                        left: 8,
+                                        backgroundColor: theme.colors.surface,
+                                        paddingHorizontal: 4,
+                                        fontSize: 12,
+                                        color: theme.colors.onSurfaceVariant,
+                                        zIndex: 1
+                                    }}>
+                                        Assigned Materials
+                                    </Text>
+                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 40 }}>
+                                        {productForm.materialIds.length === 0 ? (
+                                            <Text style={{ color: theme.colors.onSurfaceVariant }}>Pick materials...</Text>
+                                        ) : (
+                                            productForm.materialIds.map(id => {
+                                                const m = materials.find(mat => mat.MaterialID.toString() === id);
+                                                return m ? (
+                                                    <Chip
+                                                        key={id}
+                                                        compact
+                                                        style={{ 
+                                                            height: 30, 
+                                                            backgroundColor: theme.colors.secondaryContainer,
+                                                            justifyContent: 'center',
+                                                            alignItems: 'center',
+                                                            paddingHorizontal: 0
+                                                        }}
+                                                        textStyle={{ 
+                                                            fontSize: 11, 
+                                                            color: theme.colors.onSecondaryContainer,
+                                                            lineHeight: 16,
+                                                            marginVertical: 0,
+                                                            textAlignVertical: 'center',
+                                                            paddingVertical: 0
+                                                        }}
+                                                    >
+                                                        {m.Name}
+                                                    </Chip>
+                                                ) : null;
+                                            })
+                                        )}
+                                    </View>
+                                    <View style={{ position: 'absolute', right: 4, top: 12 }}>
+                                        <IconButton icon={isMaterialMenuVisible ? "chevron-up" : "chevron-down"} size={24} style={{ margin: 0 }} />
+                                    </View>
+                                </Pressable>
+                            }
+                            contentStyle={{
+                                backgroundColor: theme.colors.surface,
+                                borderRadius: 12,
+                                paddingVertical: 8,
+                                width: width * 0.8,
+                                maxWidth: 500
+                            }}
+                        >
+                            <Menu.Item
+                                onPress={() => {
+                                    if (productForm.materialIds.length === materials.length) {
+                                        setProductForm({ ...productForm, materialIds: [] });
+                                    } else {
+                                        setProductForm({ ...productForm, materialIds: materials.map(m => m.MaterialID.toString()) });
+                                    }
+                                }}
+                                title={productForm.materialIds.length === materials.length ? "Deselect All" : "Select All Items"}
+                                leadingIcon={productForm.materialIds.length === materials.length ? "checkbox-multiple-marked" : "checkbox-multiple-blank-outline"}
+                            />
+                            <View style={{ height: 1, backgroundColor: theme.colors.surfaceVariant, marginVertical: 4 }} />
+                            <Text style={{
+                                paddingHorizontal: 16,
+                                paddingVertical: 8,
+                                fontSize: 12,
+                                fontWeight: '700',
+                                color: theme.colors.primary,
+                                textTransform: 'uppercase',
+                                letterSpacing: 1
+                            }}>
+                                Materials List
+                            </Text>
+                            <ScrollView style={{ maxHeight: 250 }}>
+                                {materials.map(m => {
+                                    const isSelected = productForm.materialIds.includes(m.MaterialID.toString());
+                                    return (
+                                        <Menu.Item
+                                            key={m.MaterialID}
+                                            onPress={() => {
+                                                const newIds = isSelected
+                                                    ? productForm.materialIds.filter(id => id !== m.MaterialID.toString())
+                                                    : [...productForm.materialIds, m.MaterialID.toString()];
+                                                setProductForm({ ...productForm, materialIds: newIds });
+                                            }}
+                                            title={m.Name}
+                                            leadingIcon={isSelected ? "checkbox-marked" : "checkbox-blank-outline"}
+                                            style={{
+                                                backgroundColor: isSelected ? (theme.dark ? 'rgba(0, 212, 255, 0.1)' : 'rgba(0, 212, 255, 0.05)') : 'transparent',
+                                                marginHorizontal: 8,
+                                                borderRadius: 8,
+                                                height: 48
+                                            }}
+                                            titleStyle={{
+                                                color: isSelected ? theme.colors.primary : theme.colors.onSurface,
+                                                fontWeight: isSelected ? '600' : '400',
+                                                fontSize: 15
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </ScrollView>
+                            <View style={{ borderTopWidth: 1, borderTopColor: theme.colors.surfaceVariant, marginTop: 4 }}>
+                                <Menu.Item
+                                    onPress={() => setIsMaterialMenuVisible(false)}
+                                    title="Close Selection"
+                                    titleStyle={{
+                                        color: theme.colors.primary,
+                                        fontWeight: '700',
+                                        textAlign: 'center',
+                                        fontSize: 14
+                                    }}
+                                    style={{ height: 44 }}
                                 />
                             </View>
-                        }
-                        contentStyle={{ 
-                            backgroundColor: theme.colors.surface, 
-                            borderRadius: 12, 
-                            paddingVertical: 8,
-                            width: width * 0.8, // Approximation for modal width
-                            maxWidth: 500
-                        }}
-                    >
-                        <Text style={{ 
-                            paddingHorizontal: 16, 
-                            paddingVertical: 12, 
-                            fontSize: 14, 
-                            fontWeight: '600', 
-                            color: theme.colors.onSurfaceVariant 
-                        }}>
-                            Base Material
-                        </Text>
-                        <ScrollView style={{ maxHeight: 250 }}>
-                            {materials.map(m => {
-                                const isSelected = productForm.materialId === m.MaterialID.toString();
-                                return (
-                                    <Menu.Item
-                                        key={m.MaterialID}
-                                        onPress={() => {
-                                            setProductForm({ ...productForm, materialId: m.MaterialID.toString() });
-                                            setIsMaterialMenuVisible(false);
-                                        }}
-                                        title={m.Name}
-                                        leadingIcon={isSelected ? "check-circle" : "circle-outline"}
-                                        style={{ 
-                                            backgroundColor: isSelected ? (theme.dark ? 'rgba(0, 212, 255, 0.1)' : 'rgba(0, 212, 255, 0.05)') : 'transparent',
-                                            marginHorizontal: 8,
-                                            borderRadius: 8,
-                                            height: 48
-                                        }}
-                                        titleStyle={{ 
-                                            color: isSelected ? theme.colors.primary : theme.colors.onSurface,
-                                            fontWeight: isSelected ? '600' : '400',
-                                            fontSize: 15
-                                        }}
-                                    />
-                                );
-                            })}
-                        </ScrollView>
-                    </Menu>
+                        </Menu>
+                    </View>
 
                     <TextInput label="Qty per Unit" value={productForm.quantityPerUnit} onChangeText={t => setProductForm({ ...productForm, quantityPerUnit: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
                     <TextInput label="Unit Price (₹)" value={productForm.price} onChangeText={t => setProductForm({ ...productForm, price: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />

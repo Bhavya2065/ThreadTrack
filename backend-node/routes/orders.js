@@ -121,40 +121,75 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                 }
 
                 // Validation for Raw Material Capacity (Consistency Check)
-                const capacityCheck = await transaction.request()
+                const materialsCheck = await transaction.request()
                     .input('productId', sql.Int, pId)
                     .query(`
+                        WITH Reserved AS (
+                             SELECT pm_inner.MaterialID, SUM((o.Quantity - COALESCE(prod.ProducedQty, 0)) * p_inner.MaterialQuantityPerUnit) as ReservedStock
+                             FROM Orders o
+                             JOIN Products p_inner ON o.ProductID = p_inner.ProductID
+                             JOIN ProductMaterials pm_inner ON p_inner.ProductID = pm_inner.ProductID
+                             LEFT JOIN (
+                                 SELECT OrderID, SUM(QuantityProduced) as ProducedQty
+                                 FROM ProductionLogs
+                                 GROUP BY OrderID
+                             ) prod ON o.OrderID = prod.OrderID
+                             WHERE o.Status NOT IN ('Completed', 'Cancelled')
+                             GROUP BY pm_inner.MaterialID
+                        )
                         SELECT 
                             p.MaterialQuantityPerUnit, 
                             rm.CurrentStock, 
                             p.ProductName,
-                            COALESCE((
-                                SELECT SUM((o.Quantity - COALESCE(prod.ProducedQty, 0)) * p_inner.MaterialQuantityPerUnit)
-                                FROM Orders o
-                                JOIN Products p_inner ON o.ProductID = p_inner.ProductID
-                                LEFT JOIN (
-                                    SELECT OrderID, SUM(QuantityProduced) as ProducedQty
-                                    FROM ProductionLogs
-                                    GROUP BY OrderID
-                                ) prod ON o.OrderID = prod.OrderID
-                                WHERE p_inner.BaseMaterialID = rm.MaterialID
-                                AND o.Status NOT IN ('Completed', 'Cancelled')
-                            ), 0) as ReservedStock
+                            rm.Name as MaterialName,
+                            COALESCE(r.ReservedStock, 0) as ReservedStock
                         FROM Products p
-                        JOIN RawMaterials rm ON p.BaseMaterialID = rm.MaterialID
+                        JOIN ProductMaterials pm ON p.ProductID = pm.ProductID
+                        JOIN RawMaterials rm ON pm.MaterialID = rm.MaterialID
+                        LEFT JOIN Reserved r ON rm.MaterialID = r.MaterialID
                         WHERE p.ProductID = @productId
                     `);
 
-                if (capacityCheck.recordset.length === 0) {
-                    throw new Error(`Product or base material not found for item: ${pId}`);
+                if (materialsCheck.recordset.length === 0) {
+                   // Fallback for Products without ProductMaterials
+                   const fallbackResult = await transaction.request()
+                        .input('productId', sql.Int, pId)
+                        .query(`
+                            SELECT 
+                                p.MaterialQuantityPerUnit, 
+                                rm.CurrentStock, 
+                                p.ProductName,
+                                rm.Name as MaterialName,
+                                COALESCE((
+                                    SELECT SUM((o.Quantity - COALESCE(prod.ProducedQty, 0)) * p_inner.MaterialQuantityPerUnit)
+                                    FROM Orders o
+                                    JOIN Products p_inner ON o.ProductID = p_inner.ProductID
+                                    LEFT JOIN (
+                                        SELECT OrderID, SUM(QuantityProduced) as ProducedQty
+                                        FROM ProductionLogs
+                                        GROUP BY OrderID
+                                    ) prod ON o.OrderID = prod.OrderID
+                                    WHERE p_inner.BaseMaterialID = rm.MaterialID
+                                    AND o.Status NOT IN ('Completed', 'Cancelled')
+                                ), 0) as ReservedStock
+                            FROM Products p
+                            JOIN RawMaterials rm ON p.BaseMaterialID = rm.MaterialID
+                            WHERE p.ProductID = @productId
+                        `);
+                    if (fallbackResult.recordset.length === 0) {
+                        throw new Error(`Product or base material not found for item: ${pId}`);
+                    }
+                    materialsCheck.recordset = fallbackResult.recordset;
                 }
 
-                const { MaterialQuantityPerUnit, CurrentStock, ReservedStock, ProductName } = capacityCheck.recordset[0];
-                const netStock = CurrentStock - ReservedStock;
-                const maxUnits = Math.floor(netStock / MaterialQuantityPerUnit);
+                for (const material of materialsCheck.recordset) {
+                    const { MaterialQuantityPerUnit, CurrentStock, ReservedStock, ProductName, MaterialName } = material;
+                    const netStock = CurrentStock - ReservedStock;
+                    const maxUnits = Math.floor(netStock / MaterialQuantityPerUnit);
 
-                if (qty > maxUnits) {
-                    throw new Error(`Order volume for ${ProductName} exceeds capacity. Max available: ${maxUnits}`);
+                    if (qty > maxUnits) {
+                        throw new Error(`Order volume for ${ProductName} exceeds ${MaterialName} capacity. Max available: ${maxUnits}`);
+                    }
                 }
 
                 await transaction.request()

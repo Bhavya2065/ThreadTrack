@@ -53,35 +53,51 @@ router.post('/log', auth(['Worker']), async (req, res) => {
                 .input('quantity', sql.Int, quantityProduced)
                 .query('INSERT INTO ProductionLogs (WorkerID, ProductID, OrderID, QuantityProduced, LogDate) VALUES (@workerId, @productId, @orderId, @quantity, GETUTCDATE())');
 
-            // 3. Fetch Material consumption info and current stock
-            const productResult = await transaction.request()
+            // 3. Fetch Material consumption info and current stock for all materials
+            const materialsResult = await transaction.request()
                 .input('productId', sql.Int, productId)
                 .query(`
-                    SELECT p.BaseMaterialID, p.MaterialQuantityPerUnit, rm.CurrentStock, rm.Name as MaterialName
-                    FROM Products p
-                    JOIN RawMaterials rm ON p.BaseMaterialID = rm.MaterialID
-                    WHERE p.ProductID = @productId
+                    SELECT pm.MaterialID, p.MaterialQuantityPerUnit, rm.CurrentStock, rm.Name as MaterialName
+                    FROM ProductMaterials pm
+                    JOIN Products p ON pm.ProductID = p.ProductID
+                    JOIN RawMaterials rm ON pm.MaterialID = rm.MaterialID
+                    WHERE pm.ProductID = @productId
                 `);
 
-            if (productResult.recordset.length === 0) {
-                throw new Error('Product or its base material not found');
+            if (materialsResult.recordset.length === 0) {
+                // Fallback for Products that might not have ProductMaterials entries yet
+                const fallbackResult = await transaction.request()
+                    .input('productId', sql.Int, productId)
+                    .query(`
+                        SELECT p.BaseMaterialID as MaterialID, p.MaterialQuantityPerUnit, rm.CurrentStock, rm.Name as MaterialName
+                        FROM Products p
+                        JOIN RawMaterials rm ON p.BaseMaterialID = rm.MaterialID
+                        WHERE p.ProductID = @productId
+                    `);
+                
+                if (fallbackResult.recordset.length === 0) {
+                    throw new Error('Product or its base material not found');
+                }
+                materialsResult.recordset = fallbackResult.recordset;
             }
 
-            const { BaseMaterialID, MaterialQuantityPerUnit, CurrentStock, MaterialName } = productResult.recordset[0];
-            const totalConsumed = quantityProduced * MaterialQuantityPerUnit;
+            for (const material of materialsResult.recordset) {
+                const { MaterialID, MaterialQuantityPerUnit, CurrentStock, MaterialName } = material;
+                const totalConsumed = quantityProduced * MaterialQuantityPerUnit;
 
-            // 3.1 Check for Insufficient Stock (Negative Inventory Vulnerability Fix)
-            if (totalConsumed > CurrentStock) {
-                const error = new Error(`Insufficient stock for ${MaterialName}. Available: ${CurrentStock}, Required: ${totalConsumed}`);
-                error.statusCode = 400;
-                throw error;
+                // Check for Insufficient Stock
+                if (totalConsumed > CurrentStock) {
+                    const error = new Error(`Insufficient stock for ${MaterialName}. Available: ${CurrentStock}, Required: ${totalConsumed}`);
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                // 4. Deduct from Raw Materials
+                await transaction.request()
+                    .input('materialId', sql.Int, MaterialID)
+                    .input('consumed', sql.Float, totalConsumed)
+                    .query('UPDATE RawMaterials SET CurrentStock = CurrentStock - @consumed WHERE MaterialID = @materialId');
             }
-
-            // 4. Deduct from Raw Materials
-            await transaction.request()
-                .input('materialId', sql.Int, BaseMaterialID)
-                .input('consumed', sql.Float, totalConsumed)
-                .query('UPDATE RawMaterials SET CurrentStock = CurrentStock - @consumed WHERE MaterialID = @materialId');
 
             // 5. Update Order Status based on production progress
             if (orderId) {
