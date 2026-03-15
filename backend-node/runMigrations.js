@@ -36,6 +36,21 @@ async function runMigrations() {
             BEGIN
                 ALTER TABLE Orders ADD ShippingAddress NVARCHAR(500);
             END
+
+            -- Update Status constraint to include 'Inquiry'
+            DECLARE @ConstraintName nvarchar(200)
+            SELECT @ConstraintName = name FROM sys.check_constraints 
+            WHERE parent_object_id = OBJECT_ID('Orders') AND definition LIKE '%Status%'
+            
+            IF @ConstraintName IS NOT NULL
+            BEGIN
+                EXEC('ALTER TABLE Orders DROP CONSTRAINT ' + @ConstraintName)
+            END
+            
+            IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Orders_Status')
+            BEGIN
+                ALTER TABLE Orders ADD CONSTRAINT CK_Orders_Status CHECK (Status IN ('Inquiry', 'Pending', 'In Progress', 'Completed', 'Cancelled'))
+            END
         `);
 
         // 3. Create Notifications table

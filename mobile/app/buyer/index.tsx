@@ -76,6 +76,33 @@ export default function BuyerTracking() {
         }));
     };
 
+    const checkIfInquiryNeeded = () => {
+        const itemsToOrder = Object.entries(orderQuantities)
+            .filter(([_, qty]) => parseInt(qty) > 0)
+            .map(([pId, qty]) => ({
+                productId: parseInt(pId),
+                quantity: parseInt(qty)
+            }));
+
+        for (const item of itemsToOrder) {
+            const product = products.find(p => p.ProductID === item.productId);
+            if (!product) continue;
+
+            const material = materials.find(m => m.MaterialID === product.BaseMaterialID);
+            if (!material) continue;
+
+            const cStock = parseFloat(material.CurrentStock?.toString() || '0');
+            const rStock = parseFloat(material.ReservedStock?.toString() || '0');
+            const qtyPerUnit = parseFloat(product.MaterialQuantityPerUnit?.toString() || '1');
+            
+            const netStock = cStock - rStock;
+            const maxUnits = Math.floor(netStock / qtyPerUnit);
+
+            if (item.quantity > maxUnits) return true;
+        }
+        return false;
+    };
+
     const handleCreateOrder = async () => {
         const itemsToOrder = Object.entries(orderQuantities)
             .filter(([_, qty]) => parseInt(qty) > 0)
@@ -90,25 +117,15 @@ export default function BuyerTracking() {
             return;
         }
 
-        for (const item of itemsToOrder) {
-            const product = products.find(p => p.ProductID === item.productId);
-            if (!product) continue;
-
-            const material = materials.find(m => m.MaterialID === product.BaseMaterialID);
-            const netStock = material ? material.CurrentStock - (material.ReservedStock || 0) : 0;
-            const maxUnits = material ? Math.floor(netStock / product.MaterialQuantityPerUnit) : 0;
-
-            if (item.quantity > maxUnits) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                alert(`Capacity Warning for ${product.ProductName}! Can only manufacture ${maxUnits} units given current stock.`);
-                return;
-            }
-        }
-
+        const needsInquiry = checkIfInquiryNeeded();
+        
         setSubmitting(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         try {
-            await orderService.createOrder({ items: itemsToOrder });
+            await orderService.createOrder({ 
+                items: itemsToOrder,
+                status: needsInquiry ? 'Inquiry' : 'Pending'
+            });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             setIsModalVisible(false);
             setOrderQuantities({});
@@ -126,6 +143,7 @@ export default function BuyerTracking() {
             case 'Completed': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)' };
             case 'Cancelled': return { color: theme.colors.error, bg: theme.dark ? 'rgba(255, 59, 48, 0.15)' : 'rgba(255, 59, 48, 0.1)' };
             case 'In Progress': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)' };
+            case 'Inquiry': return { color: theme.colors.tertiary, bg: theme.dark ? 'rgba(0, 200, 255, 0.1)' : 'rgba(0, 200, 255, 0.1)' };
             default: return { color: theme.colors.onSurfaceVariant, bg: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' };
         }
     };
@@ -300,7 +318,6 @@ export default function BuyerTracking() {
                                                 keyboardType="numeric"
                                                 mode="outlined"
                                                 dense
-                                                disabled={!isAvailable}
                                                 style={{ width: 80, height: 40, backgroundColor: 'transparent' }}
                                                 outlineColor={theme.colors.outline}
                                                 activeOutlineColor={theme.colors.primary}
@@ -317,6 +334,15 @@ export default function BuyerTracking() {
                         )}
                     </ScrollView>
 
+                    {checkIfInquiryNeeded() && (
+                        <View style={{ marginTop: 10, padding: 10, backgroundColor: 'rgba(0, 150, 255, 0.1)', borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <AlertTriangle size={18} color={theme.colors.primary} />
+                            <Text style={{ flex: 1, fontSize: 12, color: theme.colors.primary, fontWeight: '600' }}>
+                                Requested quantity exceeds current stock. This will be sent as a Bulk Inquiry.
+                            </Text>
+                        </View>
+                    )}
+
                     <View style={styles.modalButtons}>
                         <Button onPress={() => { Haptics.selectionAsync(); setIsModalVisible(false); setOrderQuantities({}); }} disabled={submitting} textColor={theme.colors.onSurfaceVariant}>Cancel</Button>
                         <Button
@@ -326,7 +352,7 @@ export default function BuyerTracking() {
                             disabled={submitting}
                             labelStyle={{ fontWeight: '900' }}
                         >
-                            Place Order
+                            {checkIfInquiryNeeded() ? 'Send Bulk Inquiry' : 'Place Order'}
                         </Button>
                     </View>
                 </Modal>

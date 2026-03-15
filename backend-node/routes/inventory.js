@@ -21,7 +21,7 @@ router.get('/materials', auth(), async (req, res) => {
                         GROUP BY OrderID
                     ) prod ON o.OrderID = prod.OrderID
                     WHERE pm.MaterialID = rm.MaterialID
-                    AND o.Status NOT IN ('Completed', 'Cancelled')
+                    AND o.Status NOT IN ('Completed', 'Cancelled', 'Inquiry')
                 ), 0) as ReservedStock
             FROM RawMaterials rm
         `);

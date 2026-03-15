@@ -10,7 +10,7 @@ import { TransitionView } from '../../../src/components/v2/TransitionView';
 import { Tokens } from '../../../src/theme/tokens';
 
 export default function OrderDetails() {
-    const { id } = useLocalSearchParams();
+    const { id, from } = useLocalSearchParams();
     const router = useRouter();
     const theme = useTheme();
     const styles = createStyles(theme);
@@ -53,7 +53,11 @@ export default function OrderDetails() {
         return (
             <View style={styles.container}>
                 <Appbar.Header style={styles.appbarHeader}>
-                    <Appbar.BackAction onPress={() => router.replace('/admin/recent')} color={theme.colors.onSurfaceVariant} />
+                    <Appbar.BackAction onPress={() => {
+                        if (from === 'orders') router.replace('/admin/orders');
+                        else if (from === 'recent') router.replace('/admin/recent');
+                        else router.back();
+                    }} color={theme.colors.onSurfaceVariant} />
                     <Appbar.Content title="Order Details" titleStyle={styles.appbarTitle} />
                 </Appbar.Header>
                 <View style={[styles.centered, { flex: 1 }]}>
@@ -67,7 +71,11 @@ export default function OrderDetails() {
         return (
             <View style={styles.container}>
                 <Appbar.Header style={styles.appbarHeader}>
-                    <Appbar.BackAction onPress={() => router.replace('/admin/recent')} color={theme.colors.onSurfaceVariant} />
+                    <Appbar.BackAction onPress={() => {
+                        if (from === 'orders') router.replace('/admin/orders');
+                        else if (from === 'recent') router.replace('/admin/recent');
+                        else router.back();
+                    }} color={theme.colors.onSurfaceVariant} />
                 </Appbar.Header>
                 <View style={[styles.centered, { flex: 1 }]}>
                     <Text variant="titleMedium" style={{ color: theme.colors.onSurfaceVariant }}>Order not found</Text>
@@ -85,6 +93,7 @@ export default function OrderDetails() {
             case 'Completed': return { bg: theme.dark ? 'rgba(0, 150, 255, 0.15)' : 'rgba(0, 150, 255, 0.15)', text: theme.colors.primary, border: theme.colors.primary };
             case 'Cancelled': return { bg: theme.dark ? 'rgba(255, 59, 48, 0.15)' : 'rgba(255, 59, 48, 0.15)', text: theme.colors.error, border: theme.colors.error };
             case 'In Progress': return { bg: theme.dark ? 'rgba(0, 150, 255, 0.15)' : 'rgba(0, 150, 255, 0.15)', text: theme.colors.primary, border: theme.colors.primary };
+            case 'Inquiry': return { bg: theme.dark ? 'rgba(0, 200, 255, 0.15)' : 'rgba(0, 200, 255, 0.15)', text: theme.colors.tertiary, border: theme.colors.tertiary };
             default: return { bg: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', text: theme.colors.onSurfaceVariant, border: theme.colors.outline };
         }
     };
@@ -94,7 +103,11 @@ export default function OrderDetails() {
     return (
         <View style={styles.container}>
             <Appbar.Header style={styles.appbarHeader}>
-                <Appbar.BackAction onPress={() => router.replace('/admin/recent')} color={theme.colors.onSurfaceVariant} />
+                <Appbar.BackAction onPress={() => {
+                    if (from === 'orders') router.replace('/admin/orders');
+                    else if (from === 'recent') router.replace('/admin/recent');
+                    else router.back();
+                }} color={theme.colors.onSurfaceVariant} />
                 <Appbar.Content title={`Order #${order.OrderID}`} titleStyle={styles.appbarTitle} />
             </Appbar.Header>
 

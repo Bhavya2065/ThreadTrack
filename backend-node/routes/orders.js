@@ -93,7 +93,7 @@ router.get('/:id', auth(['Admin', 'Worker', 'Buyer']), async (req, res) => {
 // Create Order (B2B - Buyer only)
 router.post('/', auth(['Buyer']), async (req, res) => {
     try {
-        const { productId, quantity, items } = req.body;
+        const { productId, quantity, items, status } = req.body;
         const buyerId = req.user.id;
 
         // Normalize input: handle both legacy (single item) and new (array of items)
@@ -134,7 +134,7 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                                  FROM ProductionLogs
                                  GROUP BY OrderID
                              ) prod ON o.OrderID = prod.OrderID
-                             WHERE o.Status NOT IN ('Completed', 'Cancelled')
+                             WHERE o.Status NOT IN ('Completed', 'Cancelled', 'Inquiry')
                              GROUP BY pm_inner.MaterialID
                         )
                         SELECT 
@@ -170,7 +170,7 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                                         GROUP BY OrderID
                                     ) prod ON o.OrderID = prod.OrderID
                                     WHERE p_inner.BaseMaterialID = rm.MaterialID
-                                    AND o.Status NOT IN ('Completed', 'Cancelled')
+                                    AND o.Status NOT IN ('Completed', 'Cancelled', 'Inquiry')
                                 ), 0) as ReservedStock
                             FROM Products p
                             JOIN RawMaterials rm ON p.BaseMaterialID = rm.MaterialID
@@ -187,8 +187,8 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                     const netStock = CurrentStock - ReservedStock;
                     const maxUnits = Math.floor(netStock / MaterialQuantityPerUnit);
 
-                    if (qty > maxUnits) {
-                        throw new Error(`Order volume for ${ProductName} exceeds ${MaterialName} capacity. Max available: ${maxUnits}`);
+                    if (qty > maxUnits && status !== 'Inquiry') {
+                        throw new Error(`Order volume for ${ProductName} exceeds ${MaterialName} capacity. Max available: ${maxUnits}. Use Bulk Inquiry instead.`);
                     }
                 }
 
@@ -196,7 +196,7 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                     .input('buyerId', sql.Int, buyerId)
                     .input('productId', sql.Int, pId)
                     .input('quantity', sql.Int, qty)
-                    .input('status', sql.NVarChar, 'Pending')
+                    .input('status', sql.NVarChar, status || 'Pending')
                     .query('INSERT INTO Orders (BuyerID, ProductID, Quantity, Status) VALUES (@buyerId, @productId, @quantity, @status)');
             }
 

@@ -164,7 +164,7 @@ export default function AdminOrders() {
                         <TransitionView key={order.OrderID} index={index}>
                             <TouchableOpacity
                                 activeOpacity={0.8}
-                                onPress={() => router.push({ pathname: '/admin/order/[id]', params: { id: order.OrderID.toString() } })}
+                                 onPress={() => router.push({ pathname: '/admin/order/[id]', params: { id: order.OrderID.toString(), from: 'orders' } })}
                             >
                                 <GlassCard style={styles.card}>
                                     <View style={styles.cardTitleRow}>
@@ -178,7 +178,7 @@ export default function AdminOrders() {
                                     </View>
 
                                     <View style={styles.orderProgress}>
-                                        <Text style={styles.statusText}>{order.Status}</Text>
+                                        <Text style={[styles.statusText, order.Status === 'Inquiry' && { color: theme.colors.tertiary }]}>{order.Status}</Text>
                                         <Text style={styles.unitsText}>{order.ProducedQuantity} / {order.Quantity} units</Text>
                                     </View>
 
@@ -191,6 +191,9 @@ export default function AdminOrders() {
 
 
                                     <View style={styles.cardActions}>
+                                        {order.Status === 'Inquiry' && (
+                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Pending')} style={[styles.actionButton, { backgroundColor: theme.colors.tertiary }]} labelStyle={{ fontWeight: '800' }}>Approve</Button>
+                                        )}
                                         {order.Status === 'Pending' && (
                                             <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'In Progress')} style={styles.actionButton} labelStyle={{ fontWeight: '800' }}>Start Mfg</Button>
                                         )}

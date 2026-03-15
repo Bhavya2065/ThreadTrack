@@ -121,7 +121,7 @@ export default function AdminHistory() {
                         <TransitionView key={order.OrderID} index={index}>
                             <TouchableOpacity
                                 activeOpacity={0.8}
-                                onPress={() => router.push({ pathname: '/admin/order/[id]', params: { id: order.OrderID.toString() } })}
+                                onPress={() => router.push({ pathname: '/admin/order/[id]', params: { id: order.OrderID.toString(), from: 'recent' } })}
                             >
                                 <GlassCard style={styles.card}>
                                     <View style={styles.cardContentRow}>
