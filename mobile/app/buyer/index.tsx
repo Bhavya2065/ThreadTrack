@@ -252,7 +252,12 @@ export default function BuyerTracking() {
                                     <View style={styles.estDelivery}>
                                         <Timer size={14} color={theme.colors.primary} />
                                         <Text style={styles.estText}>
-                                            Est. Completion: {new Date(new Date(order.OrderDate).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                            Est. Completion: {(() => {
+                                                const baselineMs = 7 * 24 * 60 * 60 * 1000;
+                                                const progress = order.ProducedQuantity / (order.Quantity || 1);
+                                                const remainingMs = baselineMs * (1 - progress);
+                                                return new Date(Date.now() + remainingMs).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                                            })()}
                                         </Text>
                                     </View>
                                 )}
