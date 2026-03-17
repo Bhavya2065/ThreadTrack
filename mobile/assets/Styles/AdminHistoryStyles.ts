@@ -48,7 +48,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     sectionTitle: {
-        fontWeight: '600',
+        fontWeight: '500',
         fontSize: 18,
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
