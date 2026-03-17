@@ -182,11 +182,13 @@ export default function AdminOrders() {
                                         <Text style={styles.unitsText}>{order.ProducedQuantity} / {order.Quantity} units</Text>
                                     </View>
 
-                                    <ProgressBar
-                                        progress={Math.min(order.ProducedQuantity / order.Quantity, 1)}
-                                        color={order.ProducedQuantity >= order.Quantity ? theme.colors.primary : theme.colors.primary}
-                                        style={styles.progressBar}
-                                    />
+                                    <View style={styles.progressBarContainer}>
+                                        <ProgressBar
+                                            progress={Math.min(order.ProducedQuantity / order.Quantity, 1)}
+                                            color={order.ProducedQuantity >= order.Quantity ? theme.colors.primary : theme.colors.primary}
+                                            style={styles.progressBar}
+                                        />
+                                    </View>
 
 
 

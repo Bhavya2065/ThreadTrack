@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, ScrollView, ActivityIndicator, RefreshControl, Platform, useWindowDimensions } from 'react-native';
 import { Text, ProgressBar, Appbar, Divider, useTheme } from 'react-native-paper';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { ShoppingBag, Calendar, User, Package, Clock } from 'lucide-react-native';
-import { orderService } from '../../../src/services/api';
+import { ShoppingBag, Calendar, User, Package, Clock, AlertCircle, Factory, Scale } from 'lucide-react-native';
+import { orderService, inventoryService } from '../../../src/services/api';
 import { createStyles } from '../../../assets/Styles/OrderDetailsStyles';
 import { GlassCard } from '../../../src/components/v2/GlassCard';
 import { TransitionView } from '../../../src/components/v2/TransitionView';
@@ -18,6 +18,8 @@ export default function OrderDetails() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [order, setOrder] = useState<any>(null);
+    const [products, setProducts] = useState<any[]>([]);
+    const [materials, setMaterials] = useState<any[]>([]);
 
     const fetchData = async () => {
         const orderId = parseInt(id as string);
@@ -26,8 +28,14 @@ export default function OrderDetails() {
             return;
         }
         try {
-            const res = await orderService.getOrderDetails(orderId);
-            setOrder(res.data);
+            const [orderRes, mRes, pRes] = await Promise.all([
+                orderService.getOrderDetails(orderId),
+                inventoryService.getMaterials(),
+                inventoryService.getProducts()
+            ]);
+            setOrder(orderRes.data);
+            setMaterials(mRes.data);
+            setProducts(pRes.data);
         } catch (error: any) {
             console.error('Failed to fetch order details', error);
             const serverError = error.response?.data?.error || error.message;
@@ -100,6 +108,36 @@ export default function OrderDetails() {
 
     const statusColors = getStatusColors(order.Status);
 
+    const getPlannerData = () => {
+        if (!order || !products.length || !materials.length) return null;
+        const product = products.find(p => p.ProductName === order.ProductName);
+        if (!product) return null;
+        const material = materials.find(m => product.MaterialIDs?.includes(m.MaterialID));
+        if (!material) return null;
+
+        const qtyPerUnit = product.MaterialQuantityPerUnit || 0;
+        const currentStock = material.CurrentStock || 0;
+        const totalOrdered = order.Quantity;
+        const capacityUnits = qtyPerUnit > 0 ? Math.floor(currentStock / qtyPerUnit) : 0;
+        const immediate = Math.min(totalOrdered, capacityUnits);
+        const pending = Math.max(0, totalOrdered - immediate);
+        const shortage = Math.max(0, (totalOrdered * qtyPerUnit) - currentStock);
+
+        return {
+            materialName: material.Name,
+            unit: material.Unit,
+            qtyPerUnit,
+            capacityUnits,
+            immediate,
+            pending,
+            shortage,
+            totalNeeded: totalOrdered * qtyPerUnit,
+            hasShortage: shortage > 0
+        };
+    };
+
+    const planner = getPlannerData();
+
     return (
         <View style={styles.container}>
             <Appbar.Header style={styles.appbarHeader}>
@@ -169,6 +207,54 @@ export default function OrderDetails() {
                                 </View>
                             </GlassCard>
                         </TransitionView>
+
+                        {planner && (order.Status === 'Inquiry' || order.Status === 'Pending' || order.Status === 'In Progress') && (
+                            <TransitionView index={1}>
+                                <GlassCard style={styles.plannerCard}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                                        <Factory size={20} color={theme.colors.primary} />
+                                        <Text style={styles.plannerTitle}>Fulfillment Planner</Text>
+                                    </View>
+
+                                    <View style={styles.plannerStats}>
+                                        <View style={styles.statBox}>
+                                            <Text style={styles.statLabel}>Immediate Production</Text>
+                                            <Text style={[styles.statValue, { color: theme.colors.primary }]}>{planner.immediate} Units</Text>
+                                        </View>
+                                        <View style={styles.statBox}>
+                                            <Text style={styles.statLabel}>Pending Stock</Text>
+                                            <Text style={[styles.statValue, planner.pending > 0 ? { color: theme.colors.error } : { color: theme.colors.onSurfaceVariant }]}>
+                                                {planner.pending} Units
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <Divider style={{ marginBottom: 16, opacity: 0.2 }} />
+
+                                    <View style={{ gap: 8 }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                            <Text style={styles.labelSmall}>Material Required ({planner.materialName})</Text>
+                                            <Text style={styles.bodyMedium}>{planner.totalNeeded.toFixed(1)} {planner.unit}</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                            <Text style={styles.labelSmall}>Current Stock</Text>
+                                            <Text style={[styles.bodyMedium, planner.hasShortage && { color: theme.colors.error }]}>
+                                                {materials.find(m => m.Name === planner.materialName)?.CurrentStock?.toFixed(1) || 0} {planner.unit}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    {planner.hasShortage && (
+                                        <View style={[styles.shortageAlert, { marginTop: 20 }]}>
+                                            <AlertCircle size={20} color={theme.colors.error} />
+                                            <Text style={styles.shortageText}>
+                                                Purchase {planner.shortage.toFixed(1)} {planner.unit} more {planner.materialName} to fulfill complete order.
+                                            </Text>
+                                        </View>
+                                    )}
+                                </GlassCard>
+                            </TransitionView>
+                        )}
 
                         {order.CompletionNotes && (
                             <TransitionView index={1}>

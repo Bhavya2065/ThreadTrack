@@ -47,6 +47,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     card: {
         marginBottom: Tokens.spacing.lg,
+        paddingBottom: 4, // Tighten up the bottom
     },
     cardTitleRow: {
         flexDirection: 'row',
@@ -82,17 +83,23 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
+    progressBarContainer: {
+        height: 24, // Explicitly constrain height on web
+        justifyContent: 'center',
+        marginBottom: 8,
+    },
     progressBar: {
-        height: 4,
-        borderRadius: 2,
-        marginBottom: 6,
+        height: 6,
+        borderRadius: 3,
         backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
     },
     cardActions: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        marginTop: 0,
-        gap: 6,
+        marginTop: 4, // Spacing above buttons
+        gap: 8,
+        minHeight: 40, // Ensure height for web
+        alignItems: 'center',
     },
     actionButton: {
         borderRadius: Tokens.borderRadius.md,

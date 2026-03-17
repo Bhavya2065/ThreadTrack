@@ -228,5 +228,57 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     topMargin: {
         marginTop: 16,
-    }
+    },
+    plannerCard: {
+        marginBottom: Tokens.spacing.lg,
+        borderColor: theme.colors.primary,
+        borderWidth: 1,
+    },
+    plannerTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: theme.colors.primary,
+        marginBottom: 16,
+    },
+    plannerStats: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 16,
+        marginBottom: 20,
+    },
+    statBox: {
+        flex: 1,
+        minWidth: '45%',
+        padding: 12,
+        borderRadius: 8,
+        backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
+    },
+    statLabel: {
+        fontSize: 11,
+        color: theme.colors.onSurfaceVariant,
+        fontWeight: '700',
+        marginBottom: 4,
+        textTransform: 'uppercase',
+    },
+    statValue: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: theme.colors.onSurface,
+    },
+    shortageAlert: {
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: theme.dark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
+        borderColor: theme.colors.error,
+        borderWidth: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    shortageText: {
+        flex: 1,
+        color: theme.colors.error,
+        fontSize: 13,
+        fontWeight: '700',
+    },
 });
