@@ -229,7 +229,7 @@ export default function InventoryManagement() {
                                         <View style={styles.titleRow}>
                                             <Text style={styles.bold}>{m.Name}</Text>
                                             <View style={m.CurrentStock <= m.MinStockThreshold ? styles.inactiveChip : styles.activeChip}>
-                                                <Text style={styles.chipText}>{m.CurrentStock <= m.MinStockThreshold ? 'LOW' : 'DECENT'}</Text>
+                                                <Text style={styles.chipText}>{m.CurrentStock <= m.MinStockThreshold ? 'Low' : 'Decent'}</Text>
                                             </View>
                                         </View>
                                         <View style={styles.metaRow}>
@@ -287,7 +287,7 @@ export default function InventoryManagement() {
                                             <View style={styles.titleRow}>
                                                 <Text style={styles.bold}>{p.ProductName}</Text>
                                                 <View style={p.IsActive ? styles.activeChip : styles.inactiveChip}>
-                                                    <Text style={styles.chipText}>{p.IsActive ? 'LIVE' : 'HIDDEN'}</Text>
+                                                    <Text style={styles.chipText}>{p.IsActive ? 'Live' : 'Hidden'}</Text>
                                                 </View>
                                             </View>
                                             <View style={styles.metaRow}>
@@ -466,9 +466,8 @@ export default function InventoryManagement() {
                                 paddingHorizontal: 16,
                                 paddingVertical: 8,
                                 fontSize: 12,
-                                fontWeight: '700',
+                                fontWeight: 'normal',
                                 color: theme.colors.primary,
-                                textTransform: 'uppercase',
                                 letterSpacing: 1
                             }}>
                                 Materials List

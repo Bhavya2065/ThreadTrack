@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
         transform: [{ rotate: '45deg' }],
     },
     logoText: {
-        fontWeight: '800',
+        fontWeight: 'normal',
         letterSpacing: -0.5,
     },
     navLinks: {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     },
     navLabel: {
         marginLeft: 8,
-        fontWeight: '600',
+        fontWeight: 'normal',
     },
     activeIndicator: {
         position: 'absolute',

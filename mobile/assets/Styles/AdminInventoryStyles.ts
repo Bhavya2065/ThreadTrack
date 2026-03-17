@@ -12,7 +12,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         letterSpacing: 0.5,
         color: theme.colors.onSurface,
         fontSize: 20,
@@ -33,7 +33,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     sectionTitle: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 18,
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
@@ -54,14 +54,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginRight: 12,
     },
     inventoryName: {
-        fontWeight: '600',
+        fontWeight: 'normal',
         fontSize: 16,
         marginLeft: 12,
         color: theme.colors.onSurface,
     },
     stockValues: {
         textAlign: 'right',
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 14,
         color: theme.colors.onSurfaceVariant,
     },
@@ -84,7 +84,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     alertText: {
         marginLeft: 12,
         color: Tokens.colors.error,
-        fontWeight: '600',
+        fontWeight: 'normal',
         flex: 1,
         fontSize: 14,
     },

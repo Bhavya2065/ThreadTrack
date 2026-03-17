@@ -213,7 +213,7 @@ export default function BuyerTracking() {
                                         <Text style={styles.orderTitle}>{order.ProductName}</Text>
                                     </View>
                                     <View style={[styles.chip, { borderColor: getStatusStyle(order.Status).bg === getStatusStyle(order.Status).bg ? getStatusStyle(order.Status).bg : getStatusStyle(order.Status).color, backgroundColor: getStatusStyle(order.Status).bg, paddingHorizontal: 10, justifyContent: 'center' }]}>
-                                        <Text style={{ color: getStatusStyle(order.Status).color, fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>{order.Status}</Text>
+                                        <Text style={{ color: getStatusStyle(order.Status).color, fontSize: 10, fontWeight: 'normal' }}>{order.Status}</Text>
                                     </View>
                                 </View>
 
@@ -355,7 +355,7 @@ export default function BuyerTracking() {
                             onPress={handleCreateOrder}
                             loading={submitting}
                             disabled={submitting}
-                            labelStyle={{ fontWeight: '900' }}
+                            labelStyle={{ fontWeight: 'normal' }}
                         >
                             {checkIfInquiryNeeded() ? 'Send Bulk Inquiry' : 'Place Order'}
                         </Button>

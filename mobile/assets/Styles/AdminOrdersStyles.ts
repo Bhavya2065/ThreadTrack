@@ -12,7 +12,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         letterSpacing: 0.5,
         color: theme.colors.onSurface,
         fontSize: 20,
@@ -39,7 +39,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         paddingTop: 0,
     },
     sectionTitle: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 18,
         color: theme.colors.onSurface,
         marginBottom: Tokens.spacing.md,
@@ -57,7 +57,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     cardTitleText: {
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: 'normal',
         color: theme.colors.onSurface,
         flex: 1,
     },
@@ -65,7 +65,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         color: theme.colors.onSurfaceVariant,
         fontSize: 14,
         marginBottom: 8,
-        fontWeight: '600',
+        fontWeight: 'normal',
     },
     orderProgress: {
         flexDirection: 'row',
@@ -73,7 +73,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: 4,
     },
     statusText: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         color: theme.colors.primary,
         fontSize: 11,
         letterSpacing: 0.5,
@@ -81,7 +81,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     unitsText: {
         color: theme.colors.onSurfaceVariant,
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: 'normal',
     },
     progressBarContainer: {
         height: 24, // Explicitly constrain height on web
@@ -113,14 +113,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         borderColor: theme.colors.outline,
     },
     modalTitle: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         color: theme.colors.error,
         marginBottom: Tokens.spacing.sm,
     },
     modalSubtitle: {
         marginBottom: Tokens.spacing.lg,
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '600',
+        fontWeight: 'normal',
     },
     modalInput: {
         marginBottom: Tokens.spacing.xl,
@@ -141,6 +141,6 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginVertical: 40,
         color: theme.colors.onSurfaceVariant,
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: 'normal',
     }
 });

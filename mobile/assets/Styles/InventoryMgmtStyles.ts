@@ -12,7 +12,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '600',
+        fontWeight: 'normal',
         letterSpacing: 0.5,
         color: theme.colors.onSurface,
         fontSize: 20,
@@ -33,7 +33,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.md,
     },
     sectionTitle: {
-        fontWeight: '600',
+        fontWeight: 'normal',
         fontSize: 18,
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
@@ -80,12 +80,12 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     chipText: {
         fontSize: 11,
-        fontWeight: '600',
+        fontWeight: 'normal',
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
     },
     bold: {
-        fontWeight: '600',
+        fontWeight: 'normal',
         color: theme.colors.onSurface,
         fontSize: 16,
     },
@@ -97,17 +97,17 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     priceText: {
         color: theme.colors.primary,
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 14,
     },
     availableText: {
         color: Tokens.colors.success,
-        fontWeight: '600',
+        fontWeight: 'normal',
         fontSize: 12,
     },
     outOfStockText: {
         color: theme.colors.error,
-        fontWeight: '600',
+        fontWeight: 'normal',
         fontSize: 12,
     },
     modal: {
@@ -134,14 +134,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         backgroundColor: 'transparent',
     },
     modalTitle: {
-        fontWeight: '600',
+        fontWeight: 'normal',
         color: theme.colors.onSurface,
         fontSize: 20,
         marginBottom: Tokens.spacing.sm,
     },
     modalSubTitle: {
         marginTop: 18,
-        fontWeight: '600',
+        fontWeight: 'normal',
         fontSize: 13,
         color: theme.colors.onSurfaceVariant,
         marginBottom: 10,

@@ -18,7 +18,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         letterSpacing: 0.5,
         color: theme.colors.onSurface,
         fontSize: 20,
@@ -48,7 +48,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     kpiValue: {
         fontSize: 24,
-        fontWeight: '700',
+        fontWeight: 'normal',
         color: theme.colors.onSurface,
         marginVertical: 4,
         ...Platform.select({
@@ -60,10 +60,10 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     kpiLabel: {
         fontSize: 12,
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '600',
+        fontWeight: 'normal',
     },
     sectionTitle: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 18,
         marginBottom: Tokens.spacing.lg,
         color: theme.colors.onSurface,
@@ -83,7 +83,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     chartTitle: {
         marginLeft: Tokens.spacing.sm,
         color: theme.colors.onSurface,
-        fontWeight: '600',
+        fontWeight: 'normal',
         fontSize: 14,
         letterSpacing: 0.5,
     },

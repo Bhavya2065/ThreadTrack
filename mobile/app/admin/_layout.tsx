@@ -45,7 +45,7 @@ export default function AdminLayout() {
                     <View style={styles.headerTop}>
                         <View>
                             <Text style={[styles.logoText, { color: theme.colors.primary }]}>ThreadTrack</Text>
-                            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, fontWeight: '700', letterSpacing: 1 }}>ADMIN CONSOLE</Text>
+                            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'normal', letterSpacing: 1 }}>Admin Console</Text>
                         </View>
                         <TouchableRipple
                             onPress={() => setIsCollapsed(true)}
@@ -174,9 +174,8 @@ export default function AdminLayout() {
                 borderTopWidth: 1,
             },
             tabBarLabelStyle: {
-                fontWeight: '900',
+                fontWeight: 'normal',
                 fontSize: 10,
-                textTransform: 'uppercase',
                 letterSpacing: 1,
             },
             headerShown: false,

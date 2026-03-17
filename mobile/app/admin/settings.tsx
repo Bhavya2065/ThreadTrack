@@ -29,11 +29,11 @@ export default function SettingsScreen() {
             <ScrollView style={styles.content}>
                 <View style={{ paddingTop: 12 }}>
                     <TransitionView index={0}>
-                        <Text variant="labelLarge" style={{ marginLeft: 24, marginBottom: 8, color: theme.colors.primary, fontWeight: '800' }}>APPEARANCE</Text>
+                        <Text variant="labelLarge" style={{ marginLeft: 24, marginBottom: 8, color: theme.colors.primary, fontWeight: 'normal' }}>Appearance</Text>
                         <GlassCard style={styles.glassItem}>
                             <List.Item
                                 title="Dark Mode"
-                                titleStyle={{ color: theme.colors.onSurface, fontWeight: '700' }}
+                                titleStyle={{ color: theme.colors.onSurface, fontWeight: 'normal' }}
                                 description="Switch between light and dark"
                                 descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
                                 left={() => (
@@ -51,11 +51,11 @@ export default function SettingsScreen() {
                     </TransitionView>
 
                     <TransitionView index={1}>
-                        <Text variant="labelLarge" style={{ marginLeft: 24, marginTop: 24, marginBottom: 8, color: theme.colors.primary, fontWeight: '800' }}>PREFERENCES</Text>
+                        <Text variant="labelLarge" style={{ marginLeft: 24, marginTop: 24, marginBottom: 8, color: theme.colors.primary, fontWeight: 'normal' }}>Preferences</Text>
                         <GlassCard style={styles.glassItem}>
                             <List.Item
                                 title="Notifications"
-                                titleStyle={{ color: theme.colors.onSurface, fontWeight: '700' }}
+                                titleStyle={{ color: theme.colors.onSurface, fontWeight: 'normal' }}
                                 left={() => <View style={styles.iconContainer}><Bell size={22} color={theme.colors.onSurfaceVariant} /></View>}
                                 right={() => <List.Icon icon="chevron-right" color={theme.colors.outline} />}
                                 onPress={() => { }}
@@ -63,7 +63,7 @@ export default function SettingsScreen() {
                             <Divider style={{ backgroundColor: theme.colors.outline, opacity: 0.3 }} />
                             <List.Item
                                 title="Language"
-                                titleStyle={{ color: theme.colors.onSurface, fontWeight: '700' }}
+                                titleStyle={{ color: theme.colors.onSurface, fontWeight: 'normal' }}
                                 left={() => <View style={styles.iconContainer}><Globe size={22} color={theme.colors.onSurfaceVariant} /></View>}
                                 right={() => <List.Icon icon="chevron-right" color={theme.colors.outline} />}
                                 onPress={() => { }}
@@ -71,7 +71,7 @@ export default function SettingsScreen() {
                             <Divider style={{ backgroundColor: theme.colors.outline, opacity: 0.3 }} />
                             <List.Item
                                 title="Security"
-                                titleStyle={{ color: theme.colors.onSurface, fontWeight: '700' }}
+                                titleStyle={{ color: theme.colors.onSurface, fontWeight: 'normal' }}
                                 left={() => <View style={styles.iconContainer}><Shield size={22} color={theme.colors.onSurfaceVariant} /></View>}
                                 right={() => <List.Icon icon="chevron-right" color={theme.colors.outline} />}
                                 onPress={() => { }}
@@ -83,7 +83,7 @@ export default function SettingsScreen() {
                         <GlassCard style={[styles.glassItem, { marginTop: 32, borderColor: `${theme.colors.error}30` }]}>
                             <List.Item
                                 title="Sign Out"
-                                titleStyle={{ color: theme.colors.error, fontWeight: '800' }}
+                                titleStyle={{ color: theme.colors.error, fontWeight: 'normal' }}
                                 left={() => <View style={styles.iconContainer}><LogOut size={22} color={theme.colors.error} /></View>}
                                 onPress={() => {
                                     setToken(null, null);
@@ -95,8 +95,8 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.footer}>
-                    <Text variant="bodySmall" style={styles.footerText}>THREADTRACK v2.0</Text>
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>PREMIUM EDITION</Text>
+                    <Text variant="bodySmall" style={styles.footerText}>ThreadTrack v2.0</Text>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4, fontWeight: 'normal' }}>Premium Edition</Text>
                 </View>
             </ScrollView>
         </View>

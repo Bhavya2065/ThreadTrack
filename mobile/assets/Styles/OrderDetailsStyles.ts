@@ -16,7 +16,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         elevation: 0,
     },
     appbarTitle: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         letterSpacing: 0.5,
         color: theme.colors.onSurface,
         fontSize: 20,
@@ -44,14 +44,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     productName: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 24,
         color: theme.colors.onSurface,
         letterSpacing: -0.5,
     },
     quantitySub: {
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '600',
+        fontWeight: 'normal',
         marginTop: 2,
         fontSize: 14,
     },
@@ -62,7 +62,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         borderWidth: 1,
     },
     statusText: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 11,
         letterSpacing: 0.5,
     },
@@ -90,13 +90,13 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     labelSmall: {
         color: theme.colors.onSurfaceVariant,
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: 'normal',
         marginBottom: 4,
         letterSpacing: 0.5,
     },
     bodyMedium: {
         color: theme.colors.onSurface,
-        fontWeight: '600',
+        fontWeight: 'normal',
         fontSize: 15,
     },
     progressContainer: {
@@ -115,7 +115,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     progressPercent: {
         color: theme.colors.primary,
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 24,
     },
     progressBar: {
@@ -127,7 +127,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         textAlign: 'right',
         marginTop: 10,
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '600',
+        fontWeight: 'normal',
         fontSize: 13,
     },
     notesCard: {
@@ -135,7 +135,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     notesTitle: {
         fontSize: 14,
-        fontWeight: '700',
+        fontWeight: 'normal',
         color: theme.colors.onSurface,
         marginBottom: 10,
         letterSpacing: 0.5,
@@ -148,7 +148,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     sectionTitle: {
         marginBottom: Tokens.spacing.lg,
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 18,
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
@@ -193,19 +193,19 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: 6,
     },
     timelineQuantity: {
-        fontWeight: '700',
+        fontWeight: 'normal',
         color: theme.colors.primary,
         fontSize: 16,
     },
     timelineTime: {
         color: theme.colors.onSurfaceVariant,
         fontSize: 12,
-        fontWeight: '700',
+        fontWeight: 'normal',
     },
     timelineMeta: {
         color: theme.colors.onSurface,
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: 'normal',
     },
     emptyTimeline: {
         alignItems: 'center',
@@ -214,7 +214,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     emptyTimelineText: {
         marginTop: 16,
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '700',
+        fontWeight: 'normal',
         fontSize: 14,
     },
     flex1_5: {
@@ -236,7 +236,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     plannerTitle: {
         fontSize: 16,
-        fontWeight: '700',
+        fontWeight: 'normal',
         color: theme.colors.primary,
         marginBottom: 16,
     },
@@ -256,13 +256,12 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     statLabel: {
         fontSize: 11,
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '700',
+        fontWeight: 'normal',
         marginBottom: 4,
-        textTransform: 'uppercase',
     },
     statValue: {
         fontSize: 18,
-        fontWeight: '800',
+        fontWeight: 'normal',
         color: theme.colors.onSurface,
     },
     shortageAlert: {
@@ -279,6 +278,6 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         flex: 1,
         color: theme.colors.error,
         fontSize: 13,
-        fontWeight: '700',
+        fontWeight: 'normal',
     },
 });

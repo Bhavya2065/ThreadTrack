@@ -194,13 +194,13 @@ export default function AdminOrders() {
 
                                     <View style={styles.cardActions}>
                                         {order.Status === 'Inquiry' && (
-                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Pending')} style={[styles.actionButton, { backgroundColor: theme.colors.tertiary }]} labelStyle={{ fontWeight: '800' }}>Approve</Button>
+                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Pending')} style={[styles.actionButton, { backgroundColor: theme.colors.tertiary }]} labelStyle={{ fontWeight: 'normal' }}>Approve</Button>
                                         )}
                                         {order.Status === 'Pending' && (
-                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'In Progress')} style={styles.actionButton} labelStyle={{ fontWeight: '800' }}>Start Mfg</Button>
+                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'In Progress')} style={styles.actionButton} labelStyle={{ fontWeight: 'normal' }}>Start Mfg</Button>
                                         )}
                                         {order.Status === 'In Progress' && (
-                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Completed')} style={[styles.actionButton, { backgroundColor: theme.colors.primary }]} labelStyle={{ fontWeight: '800' }}>Finalize</Button>
+                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Completed')} style={[styles.actionButton, { backgroundColor: theme.colors.primary }]} labelStyle={{ fontWeight: 'normal' }}>Finalize</Button>
                                         )}
                                         <Button mode="outlined" compact textColor={theme.colors.error} onPress={() => handleCancelOrder(order.OrderID)} style={[styles.actionButton, { borderColor: theme.colors.error }]}>Cancel</Button>
                                     </View>
@@ -245,7 +245,7 @@ export default function AdminOrders() {
                             loading={submittingModal}
                             disabled={submittingModal}
                             buttonColor={modalMode === 'Cancel' ? theme.colors.error : theme.colors.primary}
-                            labelStyle={{ fontWeight: '900' }}
+                            labelStyle={{ fontWeight: 'normal' }}
                         >
                             Confirm {modalMode}
                         </Button>

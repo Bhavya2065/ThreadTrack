@@ -197,7 +197,7 @@ export default function OrderDetails() {
 
                                 <View style={styles.progressContainer}>
                                     <View style={styles.progressHeader}>
-                                        <Text style={{ fontWeight: '700', color: theme.colors.onSurface }}>Fulfillment</Text>
+                                        <Text style={{ fontWeight: 'normal', color: theme.colors.onSurface }}>Fulfillment</Text>
                                         <Text style={styles.progressPercent}>{Math.round(progress * 100)}%</Text>
                                     </View>
                                     <ProgressBar progress={progress} color={theme.colors.primary} style={styles.progressBar} />
