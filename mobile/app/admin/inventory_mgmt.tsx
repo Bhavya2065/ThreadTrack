@@ -233,9 +233,9 @@ export default function InventoryManagement() {
                                             </View>
                                         </View>
                                         <View style={styles.metaRow}>
-                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>In Stock: {m.CurrentStock} {m.Unit}</Text>
-                                            <Text style={{ color: theme.colors.error, fontSize: 13 }}>Reserve: {m.ReservedStock}</Text>
+                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>In Stock: {m.CurrentStock.toFixed(2)} {m.Unit}</Text>
                                         </View>
+                                        <Text style={{ color: theme.colors.error, fontSize: 13, marginTop: 4 }}>Reserve: {m.ReservedStock.toFixed(2)}</Text>
                                     </View>
                                     <View style={styles.actionRow}>
                                         <IconButton
@@ -293,7 +293,7 @@ export default function InventoryManagement() {
                                             <View style={styles.metaRow}>
                                                 <Text style={styles.priceText}>₹{p.Price}</Text>
                                                 <Text style={isAvailable ? styles.availableText : styles.outOfStockText}>
-                                                    {canProduce} potential
+                                                    Potential: {canProduce}
                                                 </Text>
                                             </View>
                                             <Text style={{ marginTop: 4, fontSize: 12, color: theme.colors.onSurfaceVariant }}>
@@ -415,15 +415,15 @@ export default function InventoryManagement() {
                                                     <Chip
                                                         key={id}
                                                         compact
-                                                        style={{ 
-                                                            height: 30, 
+                                                        style={{
+                                                            height: 30,
                                                             backgroundColor: theme.colors.secondaryContainer,
                                                             justifyContent: 'center',
                                                             alignItems: 'center',
                                                             paddingHorizontal: 0
                                                         }}
-                                                        textStyle={{ 
-                                                            fontSize: 11, 
+                                                        textStyle={{
+                                                            fontSize: 11,
                                                             color: theme.colors.onSecondaryContainer,
                                                             lineHeight: 16,
                                                             marginVertical: 0,

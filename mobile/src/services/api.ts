@@ -131,6 +131,7 @@ export const getUserInfo = (): User | null => {
 export const authService = {
     login: (username: string, password: string) => api.post('/auth/login', { username, password }),
     register: (userData: any) => api.post('/auth/register', userData),
+    updatePushToken: (userId: number, pushToken: string) => api.post('/auth/update-push-token', { userId, pushToken }),
 };
 
 export const inventoryService = {

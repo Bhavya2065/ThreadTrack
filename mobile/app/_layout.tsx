@@ -57,6 +57,9 @@ const darkTheme = {
 };
 
 import { initAuth } from "../src/services/api";
+import { notificationService } from "../src/services/notificationService";
+import { Alert } from "react-native";
+import { useRouter } from "expo-router";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -70,21 +73,39 @@ export default function RootLayout() {
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
   const [initialized, setInitialized] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const isHideLayout = pathname === '/' ||
     pathname.startsWith('/admin') ||
     pathname.startsWith('/buyer') ||
     pathname.startsWith('/worker');
 
-  useEffect(() => {
-    const startup = async () => {
-      await Promise.all([
-        loadTheme(),
-        initAuth()
-      ]);
-      setInitialized(true);
-    };
-    startup();
-  }, []);
+    useEffect(() => {
+        const startup = async () => {
+            await Promise.all([
+                loadTheme(),
+                initAuth()
+            ]);
+            setInitialized(true);
+
+            // Initialize notification listeners (Commented out to prevent Expo Go errors)
+            /*
+            const cleanup = notificationService.addNotificationListeners(
+                (notification) => {
+                    console.log('[Push] Notification received in foreground:', notification);
+                },
+                (response) => {
+                    console.log('[Push] Notification interaction:', response);
+                    const data = response.notification.request.content.data;
+                    if (data?.url) {
+                        router.push(data.url as any);
+                    }
+                }
+            );
+            return cleanup;
+            */
+        };
+        startup();
+    }, []);
 
   const loadTheme = async () => {
     try {

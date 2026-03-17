@@ -4,6 +4,7 @@ const { poolPromise, sql } = require('../config/db');
 const auth = require('../middleware/authMiddleware');
 const fs = require('fs');
 const path = require('path');
+const { sendPushNotification } = require('../config/notifications');
 
 const logError = (err, route) => {
     const logPath = path.join(__dirname, '../error.log');
@@ -236,6 +237,31 @@ router.put('/:id', auth(['Admin']), async (req, res) => {
 
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Send Push Notification to Buyer
+        try {
+            const buyerInfo = await pool.request()
+                .input('orderId', sql.Int, id)
+                .query(`
+                    SELECT u.PushToken, p.ProductName 
+                    FROM Orders o 
+                    JOIN Users u ON o.BuyerID = u.UserID 
+                    JOIN Products p ON o.ProductID = p.ProductID 
+                    WHERE o.OrderID = @orderId
+                `);
+
+            const buyer = buyerInfo.recordset[0];
+            if (buyer && buyer.PushToken) {
+                await sendPushNotification(
+                    buyer.PushToken,
+                    'Order Status Updated',
+                    `Your order for ${buyer.ProductName} is now ${status}.`,
+                    { url: `/buyer` }
+                );
+            }
+        } catch (pushErr) {
+            console.error('[Push] Silent failure sending order update:', pushErr.message);
         }
 
         res.json({ message: 'Order status updated successfully' });

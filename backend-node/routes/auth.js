@@ -65,4 +65,22 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Update Push Token
+router.post('/update-push-token', async (req, res) => {
+    try {
+        const { userId, pushToken } = req.body;
+        if (!userId) return res.status(400).json({ error: 'User ID is required' });
+
+        const pool = await poolPromise;
+        await pool.request()
+            .input('userId', sql.Int, userId)
+            .input('pushToken', sql.NVarChar, pushToken)
+            .query('UPDATE Users SET PushToken = @pushToken WHERE UserID = @userId');
+
+        res.json({ message: 'Push token updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

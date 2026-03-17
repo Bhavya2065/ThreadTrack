@@ -9,6 +9,8 @@ import { createStyles } from '../../assets/Styles/SettingsStyles';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { Tokens } from '../../src/theme/tokens';
+import { notificationService } from '../../src/services/notificationService';
+import { Alert } from 'react-native';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -58,7 +60,14 @@ export default function SettingsScreen() {
                                 titleStyle={{ color: theme.colors.onSurface, fontWeight: 'normal' }}
                                 left={() => <View style={styles.iconContainer}><Bell size={22} color={theme.colors.onSurfaceVariant} /></View>}
                                 right={() => <List.Icon icon="chevron-right" color={theme.colors.outline} />}
-                                onPress={() => { }}
+                                onPress={() => {
+                                    // Notification registration disabled for Expo Go compatibility
+                                    if (Platform.OS === 'web') {
+                                        alert('Direct Push is disabled in Expo Go. Switching to In-App system soon.');
+                                    } else {
+                                        Alert.alert('Notice', 'Direct Push Notifications are disabled in Expo Go. We will implement an In-App system instead.');
+                                    }
+                                }}
                             />
                             <Divider style={{ backgroundColor: theme.colors.outline, opacity: 0.3 }} />
                             <List.Item

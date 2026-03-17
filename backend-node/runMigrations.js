@@ -22,6 +22,12 @@ async function runMigrations() {
             BEGIN
                 ALTER TABLE Products ADD ImageURL NVARCHAR(500);
             END
+
+            -- Add PushToken to Users table
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'PushToken')
+            BEGIN
+                ALTER TABLE Users ADD PushToken NVARCHAR(255);
+            END
         `);
 
         // 2. Update Orders table

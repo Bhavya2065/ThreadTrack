@@ -308,14 +308,6 @@ export default function BuyerTracking() {
                                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <View style={{ flex: 1 }}>
                                                 <Text style={styles.productNameText}>{p.ProductName}</Text>
-                                                <Text
-                                                    style={[
-                                                        styles.availabilityText,
-                                                        { color: isAvailable ? theme.colors.primary : theme.colors.error }
-                                                    ]}
-                                                >
-                                                    {isAvailable ? `Available (Max ${canProduce})` : 'Out of Stock'}
-                                                </Text>
                                             </View>
                                             <TextInput
                                                 value={orderQuantities[p.ProductID] || ''}

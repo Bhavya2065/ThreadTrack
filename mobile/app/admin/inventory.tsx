@@ -144,7 +144,7 @@ export default function AdminInventory() {
                                                 variant="bodySmall"
                                                 style={[styles.stockValues, isLow && { color: theme.colors.error, fontWeight: 'bold' }]}
                                             >
-                                                {item.CurrentStock} {item.Unit}
+                                                {Number(item.CurrentStock).toFixed(2)} {item.Unit}
                                             </Text>
                                         </View>
                                         <ProgressBar
