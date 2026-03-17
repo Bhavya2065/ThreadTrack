@@ -52,6 +52,8 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         fontSize: 18,
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
+        marginLeft: 5,
+        marginTop: 5,
     },
     card: {
         marginBottom: Tokens.spacing.md,
