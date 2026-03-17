@@ -48,7 +48,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     sectionTitle: {
-        fontWeight: '700',
+        fontWeight: '600',
         fontSize: 18,
         color: theme.colors.onSurface,
         letterSpacing: 0.5,
@@ -73,14 +73,14 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
     },
     cardTitleText: {
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: 'normal',
         color: theme.colors.onSurface,
         flex: 1,
     },
     buyerText: {
         fontSize: 13,
         color: theme.colors.onSurfaceVariant,
-        fontWeight: '600',
+        fontWeight: 'normal',
     },
     statusText: {
         fontWeight: '700',
