@@ -56,7 +56,7 @@ export default function WorkerInput() {
             setProducts(productsRes.data);
             setLogs(logsRes.data);
 
-            const activeOrders = ordersRes.data.filter((o: any) => o.Status !== 'Completed');
+            const activeOrders = ordersRes.data.filter((o: any) => o.Status === 'In Progress');
             setOrders(activeOrders);
 
             // Auto-shift: if nothing selected, or if current selection is no longer active, select first available
