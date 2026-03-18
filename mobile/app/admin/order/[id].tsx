@@ -211,7 +211,7 @@ export default function OrderDetails() {
                         {planner && (order.Status === 'Inquiry' || order.Status === 'Pending' || order.Status === 'In Progress') && (
                             <TransitionView index={1}>
                                 <GlassCard style={styles.plannerCard}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 8 }}>
                                         <Factory size={20} color={theme.colors.primary} />
                                         <Text style={styles.plannerTitle}>Fulfillment Planner</Text>
                                     </View>

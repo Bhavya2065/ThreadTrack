@@ -238,7 +238,6 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         fontSize: 16,
         fontWeight: 'normal',
         color: theme.colors.primary,
-        marginBottom: 16,
     },
     plannerStats: {
         flexDirection: 'row',
