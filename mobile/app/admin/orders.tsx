@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, ScrollView, ActivityIndicator, RefreshControl, useWindowDimensions, Platform, TouchableOpacity } from 'react-native';
 import { Text, Title, Paragraph, ProgressBar, MD3Colors, Appbar, Button, Portal, Modal, TextInput, useTheme, Searchbar, Divider } from 'react-native-paper';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { ShoppingBag, AlertTriangle, ArrowRight, User } from 'lucide-react-native';
+import { ShoppingBag, AlertTriangle, ArrowRight, User, Calendar } from 'lucide-react-native';
 import { orderService, setToken } from '../../src/services/api';
 import { createStyles } from '../../assets/Styles/AdminOrdersStyles';
 import { GlassCard } from '../../src/components/v2/GlassCard';
@@ -172,9 +172,17 @@ export default function AdminOrders() {
 
                                     </View>
 
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                                        <User size={14} color={theme.colors.onSurfaceVariant} />
-                                        <Text style={[styles.buyerText, { marginBottom: 0, marginLeft: 6 }]}>{order.BuyerName}</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 12 }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <User size={14} color={theme.colors.onSurfaceVariant} />
+                                            <Text style={[styles.buyerText, { marginBottom: 0, marginLeft: 6 }]}>{order.BuyerName}</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Calendar size={14} color={theme.colors.onSurfaceVariant} />
+                                            <Text style={[styles.buyerText, { marginBottom: 0, marginLeft: 6 }]}>
+                                                {new Date(order.OrderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </Text>
+                                        </View>
                                     </View>
 
                                     <View style={styles.orderProgress}>
