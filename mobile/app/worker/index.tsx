@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Text, TextInput, Button, Appbar, List, Divider, MD3Colors, useTheme, Snackbar } from 'react-native-paper';
 import { useRouter } from 'expo-router';
@@ -117,15 +117,34 @@ export default function WorkerInput() {
             setQuantity('');
             fetchData();
         } catch (error: any) {
+            console.error('[Worker] Submission error:', error);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            
             if (error.message === 'OFFLINE_QUEUED') {
-                Alert.alert('Offline', 'Log queued locally. Will sync online.');
+                const msg = 'Connection lost. Log saved locally and will sync when online.';
+                if (Platform.OS === 'web') {
+                    alert(msg);
+                } else {
+                    Alert.alert('Offline Mode', msg);
+                }
                 setQuantity('');
                 const count = await productionService.getOfflineQueueCount();
                 setOfflineCount(count);
                 return;
             }
-            Alert.alert('Error', error.response?.data?.error || 'Failed to log output.');
+
+            const errorMsg = error.response?.data?.error || error.message || 'Failed to log output.';
+            
+            // Show as Snackbar for quick feedback
+            setSnackbarMessage(errorMsg);
+            setSnackbarVisible(true);
+
+            // Also show as Alert for critical errors like stock shortage
+            if (Platform.OS === 'web') {
+                alert(`Error: ${errorMsg}`);
+            } else {
+                Alert.alert('Production Error', errorMsg);
+            }
         } finally {
             setSubmitting(false);
         }
