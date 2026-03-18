@@ -119,20 +119,34 @@ export const reportExporter = {
         ).join('\n');
 
         const csvContent = header + rows;
+        this.downloadCSV(csvContent, 'inventory_report.csv');
+    },
 
+    async exportOrdersToCSV(orders: any[]) {
+        const header = 'Order ID,Product,Buyer,Quantity,Status,Order Date,Notes\n';
+        const rows = orders.map(o =>
+            `${o.OrderID},"${o.ProductName}","${o.BuyerName}",${o.Quantity},"${o.Status}","${new Date(o.OrderDate).toLocaleString()}","${(o.CompletionNotes || '').replace(/"/g, '""')}"`
+        ).join('\n');
+
+        const csvContent = header + rows;
+        this.downloadCSV(csvContent, 'order_history.csv');
+    },
+
+    downloadCSV(csvContent: string, fileName: string) {
         if (Platform.OS === 'web') {
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.setAttribute('hidden', '');
             a.setAttribute('href', url);
-            a.setAttribute('download', 'inventory_report.csv');
+            a.setAttribute('download', fileName);
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         } else {
-            // Placeholder for mobile CSV sharing if needed, though PDF is usually preferred
-            console.log('CSV Export not natively implemented for mobile sharing yet.');
+            // For mobile, you would typically use expo-file-system to save and then expo-sharing to share.
+            // Since expo-file-system is not installed, we log the intent.
+            console.log('CSV Export not natively implemented for mobile sharing without expo-file-system.');
         }
     }
 };

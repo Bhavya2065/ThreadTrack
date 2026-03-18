@@ -3,7 +3,7 @@ import { View, ScrollView, ActivityIndicator, RefreshControl, useWindowDimension
 import { Text, Appbar, useTheme, Searchbar, Button } from 'react-native-paper';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { orderService, setToken } from '../../src/services/api';
-import { FileText, Clock } from 'lucide-react-native';
+import { FileText, Clock, Download } from 'lucide-react-native';
 import { reportExporter } from '../../src/utils/reportExporter';
 import { createStyles } from '../../assets/Styles/AdminHistoryStyles';
 import { GlassCard } from '../../src/components/v2/GlassCard';
@@ -107,15 +107,28 @@ export default function AdminHistory() {
                 <View style={styles.mainContent}>
                     <View style={styles.headerRow}>
                         <Text variant="titleMedium" style={styles.sectionTitle}>Activity Summary</Text>
-                        <Button
-                            mode="text"
-                            icon={() => <FileText size={18} color={theme.colors.primary} />}
-                            onPress={() => reportExporter.exportOrdersToPDF(history, "Order History Report")}
-                            textColor={theme.colors.primary}
-                            labelStyle={{ fontWeight: '700', fontSize: 13 }}
-                        >
-                            Export PDF
-                        </Button>
+                        <View style={{ flexDirection: 'row', gap: 0 }}>
+                            <Button
+                                mode="text"
+                                icon={() => <Download size={18} color={theme.colors.primary} />}
+                                onPress={() => reportExporter.exportOrdersToCSV(filteredHistory)}
+                                textColor={theme.colors.primary}
+                                labelStyle={{ fontWeight: '700', fontSize: 13 }}
+                                compact
+                            >
+                                CSV
+                            </Button>
+                            <Button
+                                mode="text"
+                                icon={() => <FileText size={18} color={theme.colors.primary} />}
+                                onPress={() => reportExporter.exportOrdersToPDF(filteredHistory, "Order History Report")}
+                                textColor={theme.colors.primary}
+                                labelStyle={{ fontWeight: '700', fontSize: 13 }}
+                                compact
+                            >
+                                PDF
+                            </Button>
+                        </View>
                     </View>
                     {filteredHistory.map((order, index) => (
                         <TransitionView key={order.OrderID} index={index}>

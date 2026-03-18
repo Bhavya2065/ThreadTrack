@@ -66,7 +66,7 @@ export default function AddProduct() {
                 await inventoryService.createProduct(data);
                 Alert.alert('Success', 'Product created successfully.');
             }
-            router.back();
+            router.push('/admin/inventory_mgmt');
         } catch (error) {
             Alert.alert('Error', 'Failed to save product.');
         } finally {
@@ -78,7 +78,7 @@ export default function AddProduct() {
         return (
             <View style={styles.container}>
                 <Appbar.Header style={styles.appbarHeader}>
-                    <Appbar.BackAction onPress={() => router.back()} color={theme.colors.onSurfaceVariant} />
+                    <Appbar.BackAction onPress={() => router.push('/admin/inventory_mgmt')} color={theme.colors.onSurfaceVariant} />
                     <Appbar.Content title={productForm.id ? "Edit Product" : "New Catalog Item"} titleStyle={styles.appbarTitle} />
                 </Appbar.Header>
                 <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -91,7 +91,7 @@ export default function AddProduct() {
     return (
         <View style={styles.container}>
             <Appbar.Header style={styles.appbarHeader}>
-                <Appbar.BackAction onPress={() => router.back()} color={theme.colors.onSurfaceVariant} />
+                <Appbar.BackAction onPress={() => router.push('/admin/inventory_mgmt')} color={theme.colors.onSurfaceVariant} />
                 <Appbar.Content title={productForm.id ? "Edit Product" : "New Catalog Item"} titleStyle={styles.appbarTitle} />
             </Appbar.Header>
 
@@ -263,7 +263,7 @@ export default function AddProduct() {
                         <Button mode="contained" onPress={handleSaveProduct} loading={submitting} contentStyle={{ height: 48 }} labelStyle={{ fontSize: 16, fontWeight: '700' }}>
                             {productForm.id ? 'Save Changes' : 'Create Product'}
                         </Button>
-                        <Button mode="outlined" onPress={() => router.back()} style={{ marginTop: 12, borderColor: theme.colors.error }} contentStyle={{ height: 48 }} textColor={theme.colors.error} labelStyle={{ fontSize: 16, fontWeight: '700' }}>
+                        <Button mode="outlined" onPress={() => router.push('/admin/inventory_mgmt')} style={{ marginTop: 12, borderColor: theme.colors.error }} contentStyle={{ height: 48 }} textColor={theme.colors.error} labelStyle={{ fontSize: 16, fontWeight: '700' }}>
                             Cancel
                         </Button>
                     </View>
