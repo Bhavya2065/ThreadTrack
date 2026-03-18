@@ -14,7 +14,7 @@ const getBaseUrl = () => {
     const ip = hostUri?.split(':')[0];
 
     // Fallback to your last known working IP if auto-detection fails
-    return ip ? `http://${ip}:3000/api` : 'http://192.168.1.7:3000/api';
+    return ip ? `http://${ip}:3000/api` : 'http://192.168.1.5:3000/api';
 };
 
 const API_BASE_URL = getBaseUrl();
