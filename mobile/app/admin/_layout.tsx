@@ -153,6 +153,7 @@ export default function AdminLayout() {
                         <Tabs.Screen name="recent" />
                         <Tabs.Screen name="settings" />
                         <Tabs.Screen name="inventory_mgmt" />
+                        <Tabs.Screen name="add_product" />
                         <Tabs.Screen name="order/[id]" />
                     </Tabs>
                 </View>
@@ -186,6 +187,7 @@ export default function AdminLayout() {
             <Tabs.Screen name="recent" options={{ title: 'History', tabBarIcon: ({ color }) => <History size={24} color={color} /> }} />
             <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => <Settings size={24} color={color} /> }} />
             <Tabs.Screen name="inventory_mgmt" options={{ href: null }} />
+            <Tabs.Screen name="add_product" options={{ href: null }} />
             <Tabs.Screen name="order/[id]" options={{ href: null }} />
         </Tabs>
     );
