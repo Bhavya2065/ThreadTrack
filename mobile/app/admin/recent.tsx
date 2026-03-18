@@ -142,7 +142,12 @@ export default function AdminHistory() {
                                             <View style={styles.cardTitleRow}>
                                                 <Text style={styles.cardTitleText}>#{order.OrderID} {order.ProductName}</Text>
                                             </View>
-                                            <Text style={styles.buyerText}>{order.BuyerName} • {order.Quantity} Units</Text>
+                                            <Text style={styles.buyerText}>
+                                                {order.BuyerName} • {order.Quantity} Units • {(() => {
+                                                    const d = new Date(order.OrderDate);
+                                                    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                                                })()}
+                                            </Text>
                                         </View>
                                         <View style={[
                                             {

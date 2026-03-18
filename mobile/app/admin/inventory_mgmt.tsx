@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Alert, Platform, useWindowDimensions, Pressable } from 'react-native';
 import { Text, Button, Portal, Modal, TextInput, MD3Colors, Appbar, IconButton, Chip, useTheme, RadioButton, Menu } from 'react-native-paper';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Plus, Trash2, Edit3, Package, Layers } from 'lucide-react-native';
 import { inventoryService } from '../../src/services/api';
 import { createStyles } from '../../assets/Styles/InventoryMgmtStyles';
@@ -22,8 +22,24 @@ export default function InventoryManagement() {
     const [isStockModalVisible, setIsStockModalVisible] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
+    const { refillMaterialId, refillAmount } = useLocalSearchParams();
     const [materialForm, setMaterialForm] = useState({ name: '', stock: '', unit: '', min: '' });
     const [stockForm, setStockForm] = useState({ id: null as number | null, name: '', amount: '' });
+
+    useEffect(() => {
+        if (refillMaterialId && refillAmount && materials.length > 0) {
+            const mId = parseInt(refillMaterialId as string);
+            const material = materials.find(m => m.MaterialID === mId);
+            if (material) {
+                setStockForm({
+                    id: mId,
+                    name: material.Name,
+                    amount: refillAmount as string
+                });
+                setIsStockModalVisible(true);
+            }
+        }
+    }, [refillMaterialId, refillAmount, materials]);
 
     useEffect(() => {
         fetchData();

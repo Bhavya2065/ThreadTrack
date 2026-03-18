@@ -180,7 +180,10 @@ export default function AdminOrders() {
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <Calendar size={14} color={theme.colors.onSurfaceVariant} />
                                             <Text style={[styles.buyerText, { marginBottom: 0, marginLeft: 6 }]}>
-                                                {new Date(order.OrderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                {(() => {
+                                                    const d = new Date(order.OrderDate);
+                                                    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                                                })()}
                                             </Text>
                                         </View>
                                     </View>

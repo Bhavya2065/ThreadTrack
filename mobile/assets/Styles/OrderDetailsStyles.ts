@@ -253,15 +253,16 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
     },
     statLabel: {
-        fontSize: 11,
+        fontSize: 12,
         color: theme.colors.onSurfaceVariant,
         fontWeight: 'normal',
-        marginBottom: 4,
+        marginBottom: 8, // Fixed spacing
     },
     statValue: {
-        fontSize: 18,
-        fontWeight: 'normal',
+        fontSize: 20,
+        fontWeight: '600',
         color: theme.colors.onSurface,
+        marginTop: 'auto', // Pushes to bottom to keep aligned with neighbor
     },
     shortageAlert: {
         padding: 16,

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, ScrollView, ActivityIndicator, RefreshControl, Platform, useWindowDimensions } from 'react-native';
-import { Text, ProgressBar, Appbar, Divider, useTheme } from 'react-native-paper';
+import { Text, ProgressBar, Appbar, Divider, useTheme, Button } from 'react-native-paper';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { ShoppingBag, Calendar, User, Package, Clock, AlertCircle, Factory, Scale } from 'lucide-react-native';
 import { orderService, inventoryService } from '../../../src/services/api';
@@ -183,7 +183,12 @@ export default function OrderDetails() {
                                         <Calendar size={18} color={theme.colors.secondary} />
                                         <View style={styles.infoTextContainer}>
                                             <Text style={styles.labelSmall}>Placed On</Text>
-                                            <Text style={styles.bodyMedium}>{new Date(order.OrderDate).toLocaleDateString()}</Text>
+                                            <Text style={styles.bodyMedium}>
+                                                {(() => {
+                                                    const d = new Date(order.OrderDate);
+                                                    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                                                })()}
+                                            </Text>
                                         </View>
                                     </View>
                                     <View style={styles.infoItem}>
@@ -232,24 +237,44 @@ export default function OrderDetails() {
                                     <Divider style={{ marginBottom: 16, opacity: 0.2 }} />
 
                                     <View style={{ gap: 8 }}>
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                            <Text style={styles.labelSmall}>Material Required ({planner.materialName})</Text>
-                                            <Text style={styles.bodyMedium}>{planner.totalNeeded.toFixed(1)} {planner.unit}</Text>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                                            <Text style={[styles.labelSmall, { flexShrink: 1, marginBottom: 0 }]}>Material Required ({planner.materialName})</Text>
+                                            <Text style={[styles.bodyMedium, { textAlign: 'right', fontWeight: '500' }]}>{planner.totalNeeded.toFixed(1)} {planner.unit}</Text>
                                         </View>
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                            <Text style={styles.labelSmall}>Current Stock</Text>
-                                            <Text style={[styles.bodyMedium, planner.hasShortage && { color: theme.colors.error }]}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                                            <Text style={[styles.labelSmall, { flexShrink: 1, marginBottom: 0 }]}>Current Stock</Text>
+                                            <Text style={[styles.bodyMedium, planner.hasShortage && { color: theme.colors.error }, { textAlign: 'right', fontWeight: '500' }]}>
                                                 {materials.find(m => m.Name === planner.materialName)?.CurrentStock?.toFixed(1) || 0} {planner.unit}
                                             </Text>
                                         </View>
                                     </View>
 
                                     {planner.hasShortage && (
-                                        <View style={[styles.shortageAlert, { marginTop: 20 }]}>
-                                            <AlertCircle size={20} color={theme.colors.error} />
-                                            <Text style={styles.shortageText}>
-                                                Purchase {planner.shortage.toFixed(1)} {planner.unit} more {planner.materialName} to fulfill complete order.
-                                            </Text>
+                                        <View style={{ gap: 12 }}>
+                                            <View style={[styles.shortageAlert, { marginTop: 20 }]}>
+                                                <AlertCircle size={20} color={theme.colors.error} />
+                                                <Text style={styles.shortageText}>
+                                                    Purchase {planner.shortage.toFixed(1)} {planner.unit} more {planner.materialName} to fulfill complete order.
+                                                </Text>
+                                            </View>
+                                            <Button
+                                                mode="contained"
+                                                icon="plus"
+                                                onPress={() => {
+                                                    const material = materials.find(m => m.Name === planner.materialName);
+                                                    router.push({
+                                                        pathname: '/admin/inventory_mgmt',
+                                                        params: {
+                                                            refillMaterialId: material?.MaterialID?.toString(),
+                                                            refillAmount: Math.ceil(planner.shortage).toString()
+                                                        }
+                                                    });
+                                                }}
+                                                style={{ backgroundColor: theme.colors.primary, borderRadius: 12 }}
+                                                labelStyle={{ fontWeight: 'normal' }}
+                                            >
+                                                Fill Stock ({Math.ceil(planner.shortage)} {planner.unit})
+                                            </Button>
                                         </View>
                                     )}
                                 </GlassCard>
@@ -285,7 +310,10 @@ export default function OrderDetails() {
                                                     </Text>
                                                 </View>
                                                 <Text style={styles.timelineMeta}>
-                                                    by {log.WorkerName} • {new Date(log.LogDate).toLocaleDateString()}
+                                                    by {log.WorkerName} • {(() => {
+                                                        const d = new Date(log.LogDate);
+                                                        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                                                    })()}
                                                 </Text>
                                             </View>
                                         </View>
