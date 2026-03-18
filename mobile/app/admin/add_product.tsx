@@ -102,8 +102,9 @@ export default function AddProduct() {
                         value={productForm.name}
                         onChangeText={t => setProductForm({ ...productForm, name: t })}
                         mode="outlined"
-                        style={styles.input}
+                        style={[styles.input, { backgroundColor: theme.colors.surface }]}
                         outlineColor={theme.colors.outline}
+                        outlineStyle={{ borderRadius: 10 }}
                         activeOutlineColor={theme.colors.primary}
                         textColor={theme.colors.onSurface}
                         disabled={!!productForm.id}
@@ -119,30 +120,17 @@ export default function AddProduct() {
                                     style={{
                                         borderWidth: 1,
                                         borderColor: theme.colors.outline,
-                                        borderRadius: 4,
-                                        paddingHorizontal: 12,
-                                        paddingVertical: 14,
-                                        minHeight: 56,
+                                        borderRadius: 10,
+                                        paddingHorizontal: 16,
+                                        height: 56,
                                         justifyContent: 'center',
-                                        backgroundColor: 'transparent',
+                                        backgroundColor: theme.colors.surface,
                                         width: '100%'
                                     }}
                                 >
-                                    <Text style={{
-                                        position: 'absolute',
-                                        top: -9,
-                                        left: 8,
-                                        backgroundColor: theme.colors.surface,
-                                        paddingHorizontal: 4,
-                                        fontSize: 12,
-                                        color: theme.colors.onSurfaceVariant,
-                                        zIndex: 1
-                                    }}>
-                                        Assigned Materials
-                                    </Text>
-                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 40 }}>
+                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 40, alignItems: 'center' }}>
                                         {productForm.materialIds.length === 0 ? (
-                                            <Text style={{ color: theme.colors.onSurfaceVariant }}>Pick materials...</Text>
+                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 16, letterSpacing: 0.15 }}>Select the Materials</Text>
                                         ) : (
                                             productForm.materialIds.map(id => {
                                                 const m = materials.find(mat => mat.MaterialID.toString() === id);
@@ -172,7 +160,7 @@ export default function AddProduct() {
                                             })
                                         )}
                                     </View>
-                                    <View style={{ position: 'absolute', right: 4, top: 12 }}>
+                                    <View style={{ position: 'absolute', right: 4, top: 8 }}>
                                         <IconButton icon={isMaterialMenuVisible ? "chevron-up" : "chevron-down"} size={24} style={{ margin: 0 }} />
                                     </View>
                                 </Pressable>
@@ -252,8 +240,8 @@ export default function AddProduct() {
                         </Menu>
                     </View>
 
-                    <TextInput label="Qty per Unit" value={productForm.quantityPerUnit} onChangeText={t => setProductForm({ ...productForm, quantityPerUnit: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Unit Price (₹)" value={productForm.price} onChangeText={t => setProductForm({ ...productForm, price: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
+                    <TextInput label="Qty per Unit" value={productForm.quantityPerUnit} onChangeText={t => setProductForm({ ...productForm, quantityPerUnit: t })} keyboardType="numeric" mode="outlined" style={[styles.input, { backgroundColor: theme.colors.surface }]} outlineStyle={{ borderRadius: 10 }} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
+                    <TextInput label="Unit Price (₹)" value={productForm.price} onChangeText={t => setProductForm({ ...productForm, price: t })} keyboardType="numeric" mode="outlined" style={[styles.input, { backgroundColor: theme.colors.surface }]} outlineStyle={{ borderRadius: 10 }} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
 
                     <View style={{ marginTop: 10 }}>
                         <Text style={styles.label}>Publish Status</Text>
