@@ -1,5 +1,6 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { Paths, File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
 export const reportExporter = {
@@ -132,7 +133,7 @@ export const reportExporter = {
         this.downloadCSV(csvContent, 'order_history.csv');
     },
 
-    downloadCSV(csvContent: string, fileName: string) {
+    async downloadCSV(csvContent: string, fileName: string) {
         if (Platform.OS === 'web') {
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
@@ -144,9 +145,18 @@ export const reportExporter = {
             a.click();
             document.body.removeChild(a);
         } else {
-            // For mobile, you would typically use expo-file-system to save and then expo-sharing to share.
-            // Since expo-file-system is not installed, we log the intent.
-            console.log('CSV Export not natively implemented for mobile sharing without expo-file-system.');
+            try {
+                const file = new File(Paths.document, fileName);
+                file.write(csvContent, {
+                    encoding: 'utf8'
+                });
+                await Sharing.shareAsync(file.uri, {
+                    UTI: 'public.comma-separated-values-text',
+                    mimeType: 'text/csv'
+                });
+            } catch (error) {
+                console.error("Failed to export CSV on mobile", error);
+            }
         }
     }
 };
