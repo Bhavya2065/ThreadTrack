@@ -11,6 +11,7 @@ export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const theme = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
@@ -20,6 +21,18 @@ export default function LoginScreen() {
     if (!username || !password) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Alert.alert('Error', 'Please enter both username and password.');
+      return;
+    }
+
+    if (username.length < 4) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert('Validation Error', 'Username must be at least 4 characters.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert('Validation Error', 'Password must be at least 6 characters.');
       return;
     }
 
@@ -89,23 +102,38 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             mode="outlined"
-            secureTextEntry
+            secureTextEntry={!showPassword}
             style={styles.input}
             outlineColor={theme.colors.outline}
             activeOutlineColor={theme.colors.primary}
             textColor={theme.colors.onSurface}
+            right={<TextInput.Icon icon={showPassword ? "eye" : "eye-off"} onPress={() => setShowPassword(!showPassword)} />}
           />
 
           <Button
             mode="contained"
             onPress={() => handleLogin()}
-            style={styles.loginButton}
+            style={styles.signInButton}
             labelStyle={styles.buttonLabel}
             loading={loading}
             disabled={loading}
           >
             Sign In
           </Button>
+
+          {/* New Registration Button */}
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', marginTop: 8 }}>
+            <Text variant="labelSmall" style={styles.newAccountLabel}>New to ThreadTrack?</Text>
+            <Button
+              mode="text"
+              onPress={() => router.push('/register')}
+              labelStyle={{ fontSize: 14, fontWeight: 'bold' }}
+              textColor={theme.colors.primary}
+              compact
+            >
+              Sign Up
+            </Button>
+          </View>
 
           <Divider style={styles.divider} />
           <Text variant="labelSmall" style={styles.roleLabel}>Development Quick-Access:</Text>

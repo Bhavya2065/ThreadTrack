@@ -31,9 +31,30 @@ router.post('/register', async (req, res) => {
             .input('role', sql.NVarChar, userRole)
             .query('INSERT INTO Users (Username, PasswordHash, Role) VALUES (@username, @password, @role)');
 
-        res.status(201).json({ message: 'User registered successfully' });
+        res.status(201).json({ message: 'User registered successfully', role: userRole });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[Auth] Registration Error:', err);
+        
+        // Proper Error Handling as per user rules (specific error types)
+        if (err.code === 'ETIMEOUT') {
+            return res.status(408).json({ 
+                error: 'Database timeout occurred. Please try again later.',
+                type: 'timeout' 
+            });
+        }
+        
+        if (err.message && err.message.includes('unique constraint')) {
+            return res.status(400).json({ 
+                error: 'Username already exists.',
+                type: 'duplicate'
+            });
+        }
+
+        res.status(500).json({ 
+            error: 'An internal server error occurred during registration.', 
+            details: err.message,
+            type: 'server_error'
+        });
     }
 });
 

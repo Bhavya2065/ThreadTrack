@@ -75,6 +75,7 @@ export default function RootLayout() {
   const pathname = usePathname();
   const router = useRouter();
   const isHideLayout = pathname === '/' ||
+    pathname === '/register' ||
     pathname.startsWith('/admin') ||
     pathname.startsWith('/buyer') ||
     pathname.startsWith('/worker');
@@ -142,7 +143,7 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }} />
           ) : (
             <>
-              <Header />
+              {/* <Header /> */}
               <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={Platform.OS === 'web'}
@@ -150,7 +151,7 @@ export default function RootLayout() {
                 <View style={styles.main}>
                   <Stack screenOptions={{ headerShown: false }} />
                 </View>
-                <Footer />
+                {/* <Footer /> */}
               </ScrollView>
             </>
           )}
