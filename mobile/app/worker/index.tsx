@@ -118,7 +118,7 @@ export default function WorkerInput() {
             fetchData();
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            
+
             if (error.message === 'OFFLINE_QUEUED') {
                 const msg = 'Connection lost. Log saved locally and will sync when online.';
                 if (Platform.OS === 'web') {
@@ -133,12 +133,12 @@ export default function WorkerInput() {
             }
 
             const errorMsg = error.response?.data?.error || error.message || 'Failed to log output.';
-            
+
             // Also show as Alert for critical errors like stock shortage
             if (Platform.OS === 'web') {
-                alert(`Error: ${errorMsg}`);
+                alert(errorMsg);
             } else {
-                Alert.alert('Production Error', errorMsg);
+                Alert.alert('Notice', errorMsg);
             }
         } finally {
             setSubmitting(false);
