@@ -76,7 +76,7 @@ export default function BuyerTracking() {
         }));
     };
 
-    const checkIfInquiryNeeded = () => {
+    const inquiryInfo = React.useMemo(() => {
         const itemsToOrder = Object.entries(orderQuantities)
             .filter(([_, qty]) => parseInt(qty) > 0)
             .map(([pId, qty]) => ({
@@ -96,12 +96,12 @@ export default function BuyerTracking() {
             const qtyPerUnit = parseFloat(product.MaterialQuantityPerUnit?.toString() || '1');
             
             const netStock = cStock - rStock;
-            const maxUnits = Math.floor(netStock / qtyPerUnit);
+            const maxUnits = Math.max(0, Math.floor(netStock / qtyPerUnit));
 
-            if (item.quantity > maxUnits) return true;
+            if (item.quantity > maxUnits) return { needed: true, amount: maxUnits };
         }
-        return false;
-    };
+        return { needed: false, amount: 0 };
+    }, [orderQuantities, products, materials]);
 
     const handleCreateOrder = async () => {
         const itemsToOrder = Object.entries(orderQuantities)
@@ -117,7 +117,7 @@ export default function BuyerTracking() {
             return;
         }
 
-        const needsInquiry = checkIfInquiryNeeded();
+        const needsInquiry = inquiryInfo.needed;
         
         setSubmitting(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -331,11 +331,11 @@ export default function BuyerTracking() {
                         )}
                     </ScrollView>
 
-                    {checkIfInquiryNeeded() && (
+                    {inquiryInfo.needed && (
                         <View style={{ marginTop: 10, padding: 10, backgroundColor: 'rgba(0, 150, 255, 0.1)', borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                             <AlertTriangle size={18} color={theme.colors.primary} />
                             <Text style={{ flex: 1, fontSize: 12, color: theme.colors.primary, fontWeight: '600' }}>
-                                Requested quantity exceeds current stock. This will be sent as a Bulk Inquiry.
+                                We have only {inquiryInfo.amount} quantity left, So these order may take some more time to deliever
                             </Text>
                         </View>
                     )}
@@ -349,7 +349,7 @@ export default function BuyerTracking() {
                             disabled={submitting}
                             labelStyle={{ fontWeight: 'normal' }}
                         >
-                            {checkIfInquiryNeeded() ? 'Send Bulk Inquiry' : 'Place Order'}
+                            {inquiryInfo.needed ? 'Send Bulk Inquiry' : 'Place Order'}
                         </Button>
                     </View>
                 </Modal>

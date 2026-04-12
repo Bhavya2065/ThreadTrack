@@ -85,7 +85,7 @@ router.post('/log', auth(['Worker']), async (req, res) => {
                 const { MaterialID, MaterialQuantityPerUnit, CurrentStock, MaterialName } = material;
                 const totalConsumed = quantityProduced * MaterialQuantityPerUnit;
 
-                // Check for Insufficient Stock
+                // Check for Insufficient Stock (Strict - no negative inventory allowed)
                 if (totalConsumed > CurrentStock) {
                     const error = new Error(`Insufficient stock for ${MaterialName}. Available: ${CurrentStock.toFixed(2)}, Required: ${totalConsumed.toFixed(2)}`);
                     error.statusCode = 400;

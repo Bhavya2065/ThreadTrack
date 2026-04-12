@@ -105,19 +105,18 @@ export default function WorkerInput() {
         setSubmitting(true);
         try {
             const selectedOrder = orders.find(o => o.OrderID === selectedOrderId);
-            await productionService.logProduction({
+            const response = await productionService.logProduction({
                 workerId,
                 productId: selectedOrder?.ProductID || 1,
                 orderId: selectedOrderId,
                 quantityProduced: parseInt(quantity)
             });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setSnackbarMessage('Output logged successfully!');
+            setSnackbarMessage(response.data.message || 'Output logged successfully!');
             setSnackbarVisible(true);
             setQuantity('');
             fetchData();
         } catch (error: any) {
-            console.error('[Worker] Submission error:', error);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             
             if (error.message === 'OFFLINE_QUEUED') {
@@ -135,10 +134,6 @@ export default function WorkerInput() {
 
             const errorMsg = error.response?.data?.error || error.message || 'Failed to log output.';
             
-            // Show as Snackbar for quick feedback
-            setSnackbarMessage(errorMsg);
-            setSnackbarVisible(true);
-
             // Also show as Alert for critical errors like stock shortage
             if (Platform.OS === 'web') {
                 alert(`Error: ${errorMsg}`);
