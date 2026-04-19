@@ -60,6 +60,19 @@ CREATE TABLE ProductionLogs (
     QuantityProduced INT NOT NULL,
     LogDate DATETIME DEFAULT GETDATE()
 );
+
+-- Audit Logs Table for tracking system-wide operations
+CREATE TABLE AuditLogs (
+    LogID INT PRIMARY KEY IDENTITY(1,1),
+    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+    Action NVARCHAR(100) NOT NULL, -- e.g., 'USER_LOGIN', 'CREATE_ORDER'
+    EntityName NVARCHAR(50),      -- e.g., 'Orders', 'Users'
+    EntityID INT,                 -- ID of the affected record
+    Details NVARCHAR(MAX),        -- JSON or descriptive summary of the action
+    IPAddress NVARCHAR(50),
+    CreatedAt DATETIME DEFAULT GETDATE()
+);
+GO
 GO
 
 -- Seed Initial Data

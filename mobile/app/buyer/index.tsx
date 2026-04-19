@@ -11,8 +11,10 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { Tokens } from '../../src/theme/tokens';
+import { useToast } from '../../src/context/ToastContext';
 
 export default function BuyerTracking() {
+    const { showToast } = useToast();
     const [orders, setOrders] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [materials, setMaterials] = useState<any[]>([]);
@@ -113,7 +115,11 @@ export default function BuyerTracking() {
 
         if (itemsToOrder.length === 0) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            alert('Please enter a quantity for at least one product.');
+            showToast({
+                title: 'No Items',
+                message: 'Please enter a quantity for at least one product.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -132,7 +138,11 @@ export default function BuyerTracking() {
             fetchData();
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            alert(error.response?.data?.error || 'Failed to create order.');
+            showToast({
+                title: 'Order Failed',
+                message: error.response?.data?.error || 'Failed to create order.',
+                type: 'error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -142,7 +152,9 @@ export default function BuyerTracking() {
         switch (status) {
             case 'Completed': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)' };
             case 'Cancelled': return { color: theme.colors.error, bg: theme.dark ? 'rgba(255, 59, 48, 0.15)' : 'rgba(255, 59, 48, 0.1)' };
-            case 'In Progress': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)' };
+            case 'Approved':
+            case 'Manufacturing':
+            case 'In Progress': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)', label: 'In Progress' };
             case 'Inquiry': return { color: theme.colors.tertiary, bg: theme.dark ? 'rgba(0, 200, 255, 0.1)' : 'rgba(0, 200, 255, 0.1)' };
             default: return { color: theme.colors.onSurfaceVariant, bg: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' };
         }
@@ -201,9 +213,11 @@ export default function BuyerTracking() {
                 }
             >
                 <View style={styles.mainContent}>
-                    <View style={styles.headerRow}>
-                        <Text variant="titleLarge" style={styles.sectionTitle}>Active Shipments</Text>
-                    </View>
+                    {orders.length > 0 && (
+                        <View style={styles.headerRow}>
+                            <Text variant="titleLarge" style={styles.sectionTitle}>Active Shipments</Text>
+                        </View>
+                    )}
 
                     {orders.map((order, index) => (
                         <TransitionView key={order.OrderID} index={index}>
@@ -212,8 +226,8 @@ export default function BuyerTracking() {
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.orderTitle}>{order.ProductName}</Text>
                                     </View>
-                                    <View style={[styles.chip, { borderColor: getStatusStyle(order.Status).bg === getStatusStyle(order.Status).bg ? getStatusStyle(order.Status).bg : getStatusStyle(order.Status).color, backgroundColor: getStatusStyle(order.Status).bg, paddingHorizontal: 10, justifyContent: 'center' }]}>
-                                        <Text style={{ color: getStatusStyle(order.Status).color, fontSize: 10, fontWeight: 'normal' }}>{order.Status}</Text>
+                                    <View style={[styles.chip, { borderColor: getStatusStyle(order.Status).bg, backgroundColor: getStatusStyle(order.Status).bg, paddingHorizontal: 10, justifyContent: 'center' }]}>
+                                        <Text style={{ color: getStatusStyle(order.Status).color, fontSize: 10, fontWeight: 'normal' }}>{getStatusStyle(order.Status).label || order.Status}</Text>
                                     </View>
                                 </View>
 

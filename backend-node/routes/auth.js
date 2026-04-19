@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { poolPromise, sql } = require('../config/db');
+const { logAction } = require('../utils/auditLogger');
 
 // Register User
 router.post('/register', async (req, res) => {
@@ -25,11 +26,28 @@ router.post('/register', async (req, res) => {
         // Enforce 'Buyer' role for all public registrations to prevent role escalation
         const userRole = 'Buyer';
 
-        await pool.request()
+        const result = await pool.request()
             .input('username', sql.NVarChar, username)
             .input('password', sql.NVarChar, hashedPassword)
             .input('role', sql.NVarChar, userRole)
-            .query('INSERT INTO Users (Username, PasswordHash, Role) VALUES (@username, @password, @role)');
+            .query('INSERT INTO Users (Username, PasswordHash, Role) OUTPUT INSERTED.UserID VALUES (@username, @password, @role)');
+
+        const newUserId = result.recordset[0].UserID;
+
+        // Log registration
+        await logAction({
+            userId: newUserId,
+            action: 'USER_REGISTER',
+            entityName: 'Users',
+            entityId: newUserId,
+            details: {
+                username,
+                role: userRole,
+                timestamp: new Date().toISOString(),
+                userAgent: req.headers['user-agent']
+            },
+            ipAddress: req.ip
+        });
 
         res.status(201).json({ message: 'User registered successfully', role: userRole });
     } catch (err) {
@@ -69,16 +87,56 @@ router.post('/login', async (req, res) => {
             .query('SELECT * FROM Users WHERE Username = @username');
 
         const user = result.recordset[0];
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            // Log failed login (user not found)
+            await logAction({
+                action: 'FAILED_LOGIN_ATTEMPT',
+                details: {
+                    attemptedUsername: username,
+                    reason: 'User not found',
+                    userAgent: req.headers['user-agent']
+                },
+                ipAddress: req.ip
+            });
+            return res.status(404).json({ message: 'User not found. Please check your username.' });
+        }
 
         const isMatch = await bcrypt.compare(password, user.PasswordHash);
-        if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+        if (!isMatch) {
+            // Log failed login (wrong password)
+            await logAction({
+                userId: user.UserID,
+                action: 'FAILED_LOGIN_ATTEMPT',
+                details: {
+                    username: user.Username,
+                    reason: 'Incorrect password',
+                    userAgent: req.headers['user-agent']
+                },
+                ipAddress: req.ip
+            });
+            return res.status(401).json({ message: 'Incorrect password. Please try again.' });
+        }
 
         const token = jwt.sign(
             { id: user.UserID, role: user.Role },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
+
+        // Log login
+        await logAction({
+            userId: user.UserID,
+            action: 'USER_LOGIN',
+            entityName: 'Users',
+            entityId: user.UserID,
+            details: {
+                username: user.Username,
+                role: user.Role,
+                loginTime: new Date().toISOString(),
+                userAgent: req.headers['user-agent']
+            },
+            ipAddress: req.ip
+        });
 
         res.json({ token, role: user.Role, username: user.Username, id: user.UserID });
     } catch (err) {
@@ -87,18 +145,22 @@ router.post('/login', async (req, res) => {
 });
 
 // Update Push Token
-router.post('/update-push-token', async (req, res) => {
+// Logout User (Client side token clear, but we log the intent)
+router.post('/logout', async (req, res) => {
     try {
-        const { userId, pushToken } = req.body;
-        if (!userId) return res.status(400).json({ error: 'User ID is required' });
-
-        const pool = await poolPromise;
-        await pool.request()
-            .input('userId', sql.Int, userId)
-            .input('pushToken', sql.NVarChar, pushToken)
-            .query('UPDATE Users SET PushToken = @pushToken WHERE UserID = @userId');
-
-        res.json({ message: 'Push token updated successfully' });
+        const { userId, username } = req.body;
+        if (userId) {
+            await logAction({
+                userId: userId,
+                action: 'USER_LOGOUT',
+                details: {
+                    username: username || 'Unknown',
+                    logoutTime: new Date().toISOString()
+                },
+                ipAddress: req.ip
+            });
+        }
+        res.json({ message: 'Logged out successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

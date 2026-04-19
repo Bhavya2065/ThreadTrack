@@ -68,6 +68,8 @@ export const ThemeContext = createContext({
 
 export const useAppTheme = () => useContext(ThemeContext);
 
+import { ToastProvider } from "../src/context/ToastContext";
+
 export default function RootLayout() {
   const systemColorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
@@ -87,23 +89,6 @@ export default function RootLayout() {
                 initAuth()
             ]);
             setInitialized(true);
-
-            // Initialize notification listeners (Commented out to prevent Expo Go errors)
-            /*
-            const cleanup = notificationService.addNotificationListeners(
-                (notification) => {
-                    console.log('[Push] Notification received in foreground:', notification);
-                },
-                (response) => {
-                    console.log('[Push] Notification interaction:', response);
-                    const data = response.notification.request.content.data;
-                    if (data?.url) {
-                        router.push(data.url as any);
-                    }
-                }
-            );
-            return cleanup;
-            */
         };
         startup();
     }, []);
@@ -121,7 +106,7 @@ export default function RootLayout() {
     }
   };
 
-  if (!initialized) return null; // Or a splash screen
+  if (!initialized) return null;
 
   const toggleTheme = async () => {
     const newMode = !isDarkMode;
@@ -137,26 +122,26 @@ export default function RootLayout() {
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
-      <PaperProvider theme={theme}>
-        <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-          {isHideLayout ? (
-            <Stack screenOptions={{ headerShown: false }} />
-          ) : (
-            <>
-              {/* <Header /> */}
-              <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={Platform.OS === 'web'}
-              >
-                <View style={styles.main}>
-                  <Stack screenOptions={{ headerShown: false }} />
-                </View>
-                {/* <Footer /> */}
-              </ScrollView>
-            </>
-          )}
-        </View>
-      </PaperProvider>
+      <ToastProvider>
+        <PaperProvider theme={theme}>
+          <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+            {isHideLayout ? (
+              <Stack screenOptions={{ headerShown: false }} />
+            ) : (
+              <>
+                <ScrollView
+                  contentContainerStyle={styles.scrollContent}
+                  showsVerticalScrollIndicator={Platform.OS === 'web'}
+                >
+                  <View style={styles.main}>
+                    <Stack screenOptions={{ headerShown: false }} />
+                  </View>
+                </ScrollView>
+              </>
+            )}
+          </View>
+        </PaperProvider>
+      </ToastProvider>
     </ThemeContext.Provider>
   );
 }

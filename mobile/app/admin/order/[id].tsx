@@ -8,8 +8,10 @@ import { createStyles } from '../../../assets/Styles/OrderDetailsStyles';
 import { GlassCard } from '../../../src/components/v2/GlassCard';
 import { TransitionView } from '../../../src/components/v2/TransitionView';
 import { Tokens } from '../../../src/theme/tokens';
+import { useToast } from '../../../src/context/ToastContext';
 
 export default function OrderDetails() {
+    const { showToast } = useToast();
     const { id, from } = useLocalSearchParams();
     const router = useRouter();
     const theme = useTheme();
@@ -39,7 +41,11 @@ export default function OrderDetails() {
         } catch (error: any) {
             console.error('Failed to fetch order details', error);
             const serverError = error.response?.data?.error || error.message;
-            alert(`Error: ${serverError}`);
+            showToast({
+                title: 'Sync Error',
+                message: serverError,
+                type: 'error'
+            });
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -100,6 +106,8 @@ export default function OrderDetails() {
         switch (status) {
             case 'Completed': return { bg: theme.dark ? 'rgba(0, 150, 255, 0.15)' : 'rgba(0, 150, 255, 0.15)', text: theme.colors.primary, border: theme.colors.primary };
             case 'Cancelled': return { bg: theme.dark ? 'rgba(255, 59, 48, 0.15)' : 'rgba(255, 59, 48, 0.15)', text: theme.colors.error, border: theme.colors.error };
+            case 'Approved':
+            case 'Manufacturing':
             case 'In Progress': return { bg: theme.dark ? 'rgba(0, 150, 255, 0.15)' : 'rgba(0, 150, 255, 0.15)', text: theme.colors.primary, border: theme.colors.primary };
             case 'Inquiry': return { bg: theme.dark ? 'rgba(0, 200, 255, 0.15)' : 'rgba(0, 200, 255, 0.15)', text: theme.colors.tertiary, border: theme.colors.tertiary };
             default: return { bg: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', text: theme.colors.onSurfaceVariant, border: theme.colors.outline };
@@ -213,7 +221,7 @@ export default function OrderDetails() {
                             </GlassCard>
                         </TransitionView>
 
-                        {planner && (order.Status === 'Inquiry' || order.Status === 'Pending' || order.Status === 'In Progress') && (
+                        {planner && (order.Status === 'Inquiry' || order.Status === 'Pending' || order.Status === 'Approved' || order.Status === 'Manufacturing' || order.Status === 'In Progress') && (
                             <TransitionView index={1}>
                                 <GlassCard style={styles.plannerCard}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 8 }}>

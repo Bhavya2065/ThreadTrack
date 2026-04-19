@@ -5,6 +5,7 @@ const auth = require('../middleware/authMiddleware');
 const fs = require('fs');
 const path = require('path');
 const { sendPushNotification } = require('../config/notifications');
+const { logAction } = require('../utils/auditLogger');
 
 const logError = (err, route) => {
     const logPath = path.join(__dirname, '../error.log');
@@ -25,6 +26,7 @@ router.get('/', auth(['Admin', 'Worker']), async (req, res) => {
             FROM Orders o 
             JOIN Products p ON o.ProductID = p.ProductID 
             JOIN Users u ON o.BuyerID = u.UserID
+            ${req.user.role === 'Worker' ? "WHERE o.Status = 'Manufacturing'" : ""}
         `);
         res.json(result.recordset);
     } catch (err) {
@@ -193,12 +195,29 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                     }
                 }
 
-                await transaction.request()
+                const orderResult = await transaction.request()
                     .input('buyerId', sql.Int, buyerId)
                     .input('productId', sql.Int, pId)
                     .input('quantity', sql.Int, qty)
                     .input('status', sql.NVarChar, status || 'Pending')
-                    .query('INSERT INTO Orders (BuyerID, ProductID, Quantity, Status) VALUES (@buyerId, @productId, @quantity, @status)');
+                    .query('INSERT INTO Orders (BuyerID, ProductID, Quantity, Status) OUTPUT INSERTED.OrderID VALUES (@buyerId, @productId, @quantity, @status)');
+
+                const newOrderId = orderResult.recordset[0].OrderID;
+
+                // Log order creation
+                await logAction({
+                    userId: buyerId,
+                    action: 'CREATE_ORDER',
+                    entityName: 'Orders',
+                    entityId: newOrderId,
+                    details: {
+                        productId: pId,
+                        quantity: qty,
+                        status: status || 'Pending',
+                        timestamp: new Date().toISOString()
+                    },
+                    ipAddress: req.ip
+                });
             }
 
             await transaction.commit();
@@ -239,6 +258,21 @@ router.put('/:id', auth(['Admin']), async (req, res) => {
             return res.status(404).json({ error: 'Order not found' });
         }
 
+        // Log status update
+        await logAction({
+            userId: req.user.id,
+            action: 'UPDATE_ORDER_STATUS',
+            entityName: 'Orders',
+            entityId: id,
+            details: {
+                newStatus: status,
+                notes: completionNotes || 'None',
+                updatedBy: req.user.username,
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
+
         // Send Push Notification to Buyer
         try {
             const buyerInfo = await pool.request()
@@ -265,6 +299,62 @@ router.put('/:id', auth(['Admin']), async (req, res) => {
         }
 
         res.json({ message: 'Order status updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 1. Approve Order (Level 1)
+router.put('/:id/approve', auth(['Admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('id', sql.Int, id)
+            .query("UPDATE Orders SET Status = 'Approved' WHERE OrderID = @id AND Status = 'Pending'");
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(400).json({ error: 'Order not found or not in Pending state' });
+        }
+
+        await logAction({
+            userId: req.user.id,
+            action: 'APPROVE_ORDER',
+            entityName: 'Orders',
+            entityId: id,
+            details: { message: 'Order approved by Admin', timestamp: new Date().toISOString() },
+            ipAddress: req.ip
+        });
+
+        res.json({ message: 'Order approved successfully. Buyer notified of progress.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Start Manufacturing (Level 2)
+router.put('/:id/manufacture', auth(['Admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('id', sql.Int, id)
+            .query("UPDATE Orders SET Status = 'Manufacturing' WHERE OrderID = @id AND Status = 'Approved'");
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(400).json({ error: 'Order not found or must be Approved first' });
+        }
+
+        await logAction({
+            userId: req.user.id,
+            action: 'START_MANUFACTURING',
+            entityName: 'Orders',
+            entityId: id,
+            details: { message: 'Order released to factory floor', timestamp: new Date().toISOString() },
+            ipAddress: req.ip
+        });
+
+        res.json({ message: 'Order released to Workers.' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -301,8 +391,23 @@ router.delete('/:id', auth(['Buyer', 'Admin']), async (req, res) => {
         await pool.request()
             .input('id', sql.Int, id)
             .input('status', sql.NVarChar, 'Cancelled')
-            .input('notes', sql.NVarChar, reason || (req.user.role === 'Buyer' ? 'Cancelled by Buyer' : 'Cancelled by Admin'))
+            .input('notes', sql.NVarChar, reason || (req.user.role === 'Buyer' ? 'Cancelled by Buyer' : 'Rejected by Admin'))
             .query('UPDATE Orders SET Status = @status, CompletionNotes = @notes WHERE OrderID = @id');
+
+        // Log cancellation
+        await logAction({
+            userId: req.user.id,
+            action: 'REJECT_ORDER',
+            entityName: 'Orders',
+            entityId: id,
+            details: {
+                reason: reason || 'Not specified',
+                rejectedBy: req.user.username,
+                role: req.user.role,
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
 
         res.json({ message: 'Order cancelled successfully' });
     } catch (err) {

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { poolPromise, sql } = require('../config/db');
 const auth = require('../middleware/authMiddleware');
+const { logAction } = require('../utils/auditLogger');
 
 // Get all Raw Materials (Available to all authenticated users)
 router.get('/materials', auth(), async (req, res) => {
@@ -58,6 +59,20 @@ router.put('/materials/:id', auth(['Admin']), async (req, res) => {
             return res.status(404).json({ error: 'Material not found' });
         }
 
+        // Log material update
+        await logAction({
+            userId: req.user.id,
+            action: 'UPDATE_MATERIAL',
+            entityName: 'RawMaterials',
+            entityId: id,
+            details: {
+                updatedBy: req.user.username,
+                updates: { quantity, name, unit, minimumRequired },
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
+
         res.json({ message: 'Material updated successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -73,13 +88,22 @@ router.post('/materials', auth(['Admin']), async (req, res) => {
             return res.status(400).json({ error: 'Material name, stock, and unit are required' });
         }
 
-        const pool = await poolPromise;
-        await pool.request()
-            .input('name', sql.NVarChar, materialName)
-            .input('stock', sql.Float, currentStock)
-            .input('unit', sql.NVarChar, unit)
-            .input('min', sql.Float, minimumRequired || 0)
-            .query('INSERT INTO RawMaterials (Name, CurrentStock, Unit, MinimumRequired) VALUES (@name, @stock, @unit, @min)');
+        const newMaterialId = (await pool.request().query('SELECT @@IDENTITY AS id')).recordset[0].id;
+
+        // Log material creation
+        await logAction({
+            userId: req.user.id,
+            action: 'CREATE_MATERIAL',
+            entityName: 'RawMaterials',
+            entityId: newMaterialId,
+            details: {
+                name: materialName,
+                initialStock: currentStock,
+                unit: unit,
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
 
         res.status(201).json({ message: 'Material created successfully' });
     } catch (err) {
@@ -111,6 +135,19 @@ router.delete('/materials/:id', auth(['Admin']), async (req, res) => {
             return res.status(404).json({ error: 'Material not found' });
         }
 
+        // Log material deletion
+        await logAction({
+            userId: req.user.id,
+            action: 'DELETE_MATERIAL',
+            entityName: 'RawMaterials',
+            entityId: id,
+            details: {
+                timestamp: new Date().toISOString(),
+                deletedBy: req.user.username
+            },
+            ipAddress: req.ip
+        });
+
         res.json({ message: 'Material deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -136,6 +173,19 @@ router.put('/materials/:id/add-stock', auth(['Admin']), async (req, res) => {
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({ error: 'Material not found' });
         }
+
+        // Log stock addition
+        await logAction({
+            userId: req.user.id,
+            action: 'ADD_STOCK',
+            entityName: 'RawMaterials',
+            entityId: id,
+            details: {
+                addedQuantity: quantity,
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
 
         res.json({ message: 'Stock updated successfully' });
     } catch (err) {
@@ -200,6 +250,21 @@ router.post('/products', auth(['Admin']), async (req, res) => {
                     .query('INSERT INTO ProductMaterials (ProductID, MaterialID) VALUES (@pId, @mId)');
             }
 
+            // Log product creation
+            await logAction({
+                userId: req.user.id,
+                action: 'CREATE_PRODUCT',
+                entityName: 'Products',
+                entityId: productId,
+                details: {
+                    name: productName,
+                    materialIds: materialIds,
+                    price: price,
+                    timestamp: new Date().toISOString()
+                },
+                ipAddress: req.ip
+            });
+
             await transaction.commit();
             res.status(201).json({ message: 'Product created successfully' });
         } catch (err) {
@@ -251,6 +316,21 @@ router.put('/products/:id', auth(['Admin']), async (req, res) => {
                 }
             }
 
+            // Log product update
+            await logAction({
+                userId: req.user.id,
+                action: 'UPDATE_PRODUCT',
+                entityName: 'Products',
+                entityId: id,
+                details: {
+                    name: productName,
+                    price: price,
+                    isActive: isActive,
+                    timestamp: new Date().toISOString()
+                },
+                ipAddress: req.ip
+            });
+
             await transaction.commit();
             res.json({ message: 'Product updated successfully' });
         } catch (err) {
@@ -288,6 +368,19 @@ router.delete('/products/:id', auth(['Admin']), async (req, res) => {
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({ error: 'Product not found' });
         }
+
+        // Log product deletion
+        await logAction({
+            userId: req.user.id,
+            action: 'DELETE_PRODUCT',
+            entityName: 'Products',
+            entityId: id,
+            details: {
+                deletedBy: req.user.username,
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
 
         res.json({ message: 'Product deleted successfully' });
     } catch (err) {

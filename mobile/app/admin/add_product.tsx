@@ -4,8 +4,10 @@ import { Text, Button, TextInput, Appbar, useTheme, Chip, Menu, IconButton, Radi
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { inventoryService } from '../../src/services/api';
 import { createStyles } from '../../assets/Styles/InventoryMgmtStyles';
+import { useToast } from '../../src/context/ToastContext';
 
 export default function AddProduct() {
+    const { showToast } = useToast();
     const router = useRouter();
     const theme = useTheme();
     const styles = createStyles(theme);
@@ -37,7 +39,11 @@ export default function AddProduct() {
             const res = await inventoryService.getMaterials();
             setMaterials(res.data);
         } catch (error) {
-            Alert.alert('Error', 'Failed to fetch materials.');
+            showToast({
+                title: 'Sync Error',
+                message: 'Failed to fetch materials.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -45,7 +51,11 @@ export default function AddProduct() {
 
     const handleSaveProduct = async () => {
         if (!productForm.name || !productForm.materialIds || productForm.materialIds.length === 0 || !productForm.quantityPerUnit) {
-            Alert.alert('Error', 'Name, at least one material, and quantity are required.');
+            showToast({
+                title: 'Incomplete',
+                message: 'Name, material, and quantity are required.',
+                type: 'warning'
+            });
             return;
         }
         setSubmitting(true);
@@ -61,14 +71,26 @@ export default function AddProduct() {
         try {
             if (productForm.id) {
                 await inventoryService.updateProduct(productForm.id, data);
-                Alert.alert('Success', 'Product updated successfully.');
+                showToast({
+                    title: 'Updated',
+                    message: 'Product updated successfully.',
+                    type: 'success'
+                });
             } else {
                 await inventoryService.createProduct(data);
-                Alert.alert('Success', 'Product created successfully.');
+                showToast({
+                    title: 'Created',
+                    message: 'Product created successfully.',
+                    type: 'success'
+                });
             }
             router.push('/admin/inventory_mgmt');
         } catch (error) {
-            Alert.alert('Error', 'Failed to save product.');
+            showToast({
+                title: 'Save Failed',
+                message: 'Failed to save product.',
+                type: 'error'
+            });
         } finally {
             setSubmitting(false);
         }

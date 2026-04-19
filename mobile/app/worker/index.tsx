@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Text, TextInput, Button, Appbar, List, Divider, MD3Colors, useTheme, Snackbar } from 'react-native-paper';
+import { Text, TextInput, Button, Appbar, List, Divider, MD3Colors, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { ClipboardList, CheckCircle, PackageOpen, History } from 'lucide-react-native';
 import { productionService, inventoryService, orderService, getUserInfo, setToken } from '../../src/services/api';
@@ -11,6 +11,7 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { Tokens } from '../../src/theme/tokens';
+import { useToast } from '../../src/context/ToastContext';
 
 export default function WorkerInput() {
     const theme = useTheme();
@@ -24,9 +25,8 @@ export default function WorkerInput() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [offlineCount, setOfflineCount] = useState(0);
-    const [snackbarVisible, setSnackbarVisible] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
     const router = useRouter();
+    const { showToast } = useToast();
 
     const userInfo = getUserInfo();
     const workerId = userInfo?.id || 0;
@@ -41,7 +41,11 @@ export default function WorkerInput() {
 
         const synced = await productionService.syncOfflineLogs();
         if (synced > 0) {
-            console.log(`[Worker] Synced ${synced} logs`);
+            showToast({
+                title: 'Data Synced',
+                message: `${synced} offline logs have been uploaded.`,
+                type: 'success'
+            });
         }
 
         const count = await productionService.getOfflineQueueCount();
@@ -56,7 +60,7 @@ export default function WorkerInput() {
             setProducts(productsRes.data);
             setLogs(logsRes.data);
 
-            const activeOrders = ordersRes.data.filter((o: any) => o.Status === 'In Progress');
+            const activeOrders = ordersRes.data;
             setOrders(activeOrders);
 
             // Auto-shift: if nothing selected, or if current selection is no longer active, select first available
@@ -72,7 +76,7 @@ export default function WorkerInput() {
             if (error.response?.status === 401) {
                 setError('Session expired or unauthorized. Please log in again.');
             } else {
-                setError('Failed to load production data. Please check your connection.');
+                setError('Failed to load production data.');
             }
         } finally {
             setLoading(false);
@@ -81,13 +85,21 @@ export default function WorkerInput() {
 
     const handleSubmit = async () => {
         if (!quantity || isNaN(Number(quantity))) {
-            Alert.alert('Invalid Input', 'Please enter a valid quantity.');
+            showToast({
+                title: 'Invalid Input',
+                message: 'Please enter a valid numeric quantity.',
+                type: 'warning'
+            });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             return;
         }
 
         if (!selectedOrderId) {
-            alert('Order Required: Please select which order you are working on.');
+            showToast({
+                title: 'No Order Selected',
+                message: 'Please select which order you are working on.',
+                type: 'warning'
+            });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             return;
         }
@@ -96,7 +108,11 @@ export default function WorkerInput() {
         if (selectedOrder) {
             const remaining = Math.max(0, selectedOrder.Quantity - selectedOrder.ProducedQuantity);
             if (parseInt(quantity) > remaining) {
-                alert(remaining === 0 ? 'This order is already complete!' : `Input Error! This order only has ${remaining} units remaining. You cannot log ${quantity} units.`);
+                showToast({
+                    title: 'Limit Exceeded',
+                    message: remaining === 0 ? 'This order is already complete!' : `Only ${remaining} units remaining.`,
+                    type: 'error'
+                });
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
                 return;
             }
@@ -112,20 +128,24 @@ export default function WorkerInput() {
                 quantityProduced: parseInt(quantity)
             });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setSnackbarMessage(response.data.message || 'Output logged successfully!');
-            setSnackbarVisible(true);
+            
+            showToast({
+                title: 'Production Logged',
+                message: response.data.message || 'Output logged successfully!',
+                type: 'success'
+            });
+
             setQuantity('');
             fetchData();
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
             if (error.message === 'OFFLINE_QUEUED') {
-                const msg = 'Connection lost. Log saved locally and will sync when online.';
-                if (Platform.OS === 'web') {
-                    alert(msg);
-                } else {
-                    Alert.alert('Offline Mode', msg);
-                }
+                showToast({
+                    title: 'Offline Sync',
+                    message: 'Log saved locally and will sync when online.',
+                    type: 'info'
+                });
                 setQuantity('');
                 const count = await productionService.getOfflineQueueCount();
                 setOfflineCount(count);
@@ -133,13 +153,11 @@ export default function WorkerInput() {
             }
 
             const errorMsg = error.response?.data?.error || error.message || 'Failed to log output.';
-
-            // Also show as Alert for critical errors like stock shortage
-            if (Platform.OS === 'web') {
-                alert(errorMsg);
-            } else {
-                Alert.alert('Notice', errorMsg);
-            }
+            showToast({
+                title: 'Notice',
+                message: errorMsg,
+                type: 'error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -330,15 +348,6 @@ export default function WorkerInput() {
                     </TransitionView>
                 </View>
             </ScrollView>
-
-            <Snackbar
-                visible={snackbarVisible}
-                onDismiss={() => setSnackbarVisible(false)}
-                duration={3000}
-                style={{ backgroundColor: theme.colors.primary }}
-            >
-                {snackbarMessage}
-            </Snackbar>
         </View>
     );
 }

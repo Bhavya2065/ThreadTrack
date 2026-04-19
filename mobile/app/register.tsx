@@ -6,16 +6,14 @@ import { useRouter } from 'expo-router';
 import { authService } from '../src/services/api';
 import { createStyles } from '../assets/Styles/LoginStyles';
 import { GlassCard } from '../src/components/v2/GlassCard';
+import { useToast } from '../src/context/ToastContext';
 
 export default function RegisterScreen() {
+  const { showToast } = useToast();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorVisible, setErrorVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successVisible, setSuccessVisible] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -52,30 +50,42 @@ export default function RegisterScreen() {
 
     if (!username || !password || !confirmPassword) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      setErrorMessage('Please fill in all fields.');
-      setErrorVisible(true);
+      showToast({
+        title: 'Form Incomplete',
+        message: 'Please fill in all fields.',
+        type: 'warning'
+      });
       return;
     }
 
     if (username.length < 4) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      setErrorMessage('Username must be at least 4 characters.');
-      setErrorVisible(true);
+      showToast({
+        title: 'Validation',
+        message: 'Username must be at least 4 characters.',
+        type: 'warning'
+      });
       return;
     }
 
     const { length, lowercase, uppercase, number, noSpace, specialChar } = passwordCriteria;
     if (!length || !lowercase || !uppercase || !number || !noSpace || !specialChar) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      setErrorMessage('Password does not meet all security criteria.');
-      setErrorVisible(true);
+      showToast({
+        title: 'Security',
+        message: 'Password does not meet all security criteria.',
+        type: 'warning'
+      });
       return;
     }
 
     if (password !== confirmPassword) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      setErrorMessage('Passwords do not match.');
-      setErrorVisible(true);
+      showToast({
+        title: 'Password Mismatch',
+        message: 'Passwords do not match.',
+        type: 'error'
+      });
       return;
     }
 
@@ -85,18 +95,24 @@ export default function RegisterScreen() {
       // but we pass it anyway to match API signature.
       const res = await authService.register({ username, password, role: 'Buyer' });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setSuccessMessage('User registered successfully! Please log in.');
-      setSuccessVisible(true);
-      // Optional: Delay redirect to allow reading the snackbar
+      showToast({
+        title: 'Welcome',
+        message: 'User registered successfully! Please log in.',
+        type: 'success'
+      });
+      // Optional: Delay redirect to allow reading the toast
       setTimeout(() => {
         router.replace('/');
-      }, 3000);
+      }, 2000);
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       // Proper Error handling with specific types from API
       const errorMsg = err.response?.data?.error || err.message || 'Registration failed.';
-      setErrorMessage(errorMsg);
-      setErrorVisible(true);
+      showToast({
+        title: 'Registration Error',
+        message: errorMsg,
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -219,32 +235,6 @@ export default function RegisterScreen() {
           </GlassCard>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <Snackbar
-        visible={errorVisible}
-        onDismiss={() => setErrorVisible(false)}
-        action={{
-          label: 'Dismiss',
-          onPress: () => setErrorVisible(false),
-        }}
-        style={{ backgroundColor: theme.colors.error }}
-        duration={5000}
-      >
-        {errorMessage}
-      </Snackbar>
-
-      <Snackbar
-        visible={successVisible}
-        onDismiss={() => setSuccessVisible(false)}
-        action={{
-          label: 'Go to Login',
-          onPress: () => router.replace('/'),
-        }}
-        style={{ backgroundColor: '#15AD66' }} // Custom Success Green
-        duration={5000}
-      >
-        {successMessage}
-      </Snackbar>
     </View>
   );
 }

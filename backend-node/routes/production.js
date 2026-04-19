@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { poolPromise, sql } = require('../config/db');
 const auth = require('../middleware/authMiddleware');
+const { logAction } = require('../utils/auditLogger');
 
 // Log Production (Worker only)
 router.post('/log', auth(['Worker']), async (req, res) => {
@@ -31,8 +32,8 @@ router.post('/log', auth(['Worker']), async (req, res) => {
                 }
 
                 const { Quantity, Status, ProducedQuantity } = orderCheck.recordset[0];
-                if (Status === 'Completed') {
-                    const error = new Error('This order is already completed.');
+                if (Status !== 'Manufacturing') {
+                    const error = new Error(`Cannot log production. Order status is ${Status}, but it must be 'Manufacturing'.`);
                     error.statusCode = 400;
                     throw error;
                 }
@@ -46,12 +47,29 @@ router.post('/log', auth(['Worker']), async (req, res) => {
             }
 
             // 2. Insert Log
-            await transaction.request()
+            const productionResult = await transaction.request()
                 .input('workerId', sql.Int, workerId)
                 .input('productId', sql.Int, productId)
                 .input('orderId', sql.Int, orderId || null)
                 .input('quantity', sql.Int, quantityProduced)
-                .query('INSERT INTO ProductionLogs (WorkerID, ProductID, OrderID, QuantityProduced, LogDate) VALUES (@workerId, @productId, @orderId, @quantity, GETUTCDATE())');
+                .query('INSERT INTO ProductionLogs (WorkerID, ProductID, OrderID, QuantityProduced, LogDate) OUTPUT INSERTED.LogID VALUES (@workerId, @productId, @orderId, @quantity, GETUTCDATE())');
+
+            const newLogId = productionResult.recordset[0].LogID;
+
+            // Log production event in AuditLogs
+            await logAction({
+                userId: workerId,
+                action: 'LOG_PRODUCTION',
+                entityName: 'ProductionLogs',
+                entityId: newLogId,
+                details: {
+                    productId: productId,
+                    orderId: orderId || 'None',
+                    quantityLogged: quantityProduced,
+                    timestamp: new Date().toISOString()
+                },
+                ipAddress: req.ip
+            });
 
             // 3. Fetch Material consumption info and current stock for all materials
             const materialsResult = await transaction.request()

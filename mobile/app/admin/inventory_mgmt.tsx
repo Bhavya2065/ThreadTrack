@@ -8,8 +8,10 @@ import { createStyles } from '../../assets/Styles/InventoryMgmtStyles';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { EmptyState } from '../../src/components/EmptyState';
+import { useToast } from '../../src/context/ToastContext';
 
 export default function InventoryManagement() {
+    const { showToast } = useToast();
     const router = useRouter();
     const theme = useTheme();
     const styles = createStyles(theme);
@@ -61,7 +63,11 @@ export default function InventoryManagement() {
             setMaterials(mRes.data);
             setProducts(pRes.data);
         } catch (error) {
-            Alert.alert('Error', 'Failed to fetch inventory data.');
+            showToast({
+                title: 'Data Error',
+                message: 'Failed to fetch inventory data.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -69,7 +75,11 @@ export default function InventoryManagement() {
 
     const handleCreateMaterial = async () => {
         if (!materialForm.name || !materialForm.stock || !materialForm.unit) {
-            Alert.alert('Error', 'All fields are required.');
+            showToast({
+                title: 'Required Fields',
+                message: 'All fields are required.',
+                type: 'warning'
+            });
             return;
         }
         setSubmitting(true);
@@ -83,8 +93,17 @@ export default function InventoryManagement() {
             setIsMaterialModalVisible(false);
             setMaterialForm({ name: '', stock: '', unit: '', min: '' });
             fetchData();
+            showToast({
+                title: 'Material Created',
+                message: 'Successfully added new raw material.',
+                type: 'success'
+            });
         } catch (error) {
-            Alert.alert('Error', 'Failed to create material.');
+            showToast({
+                title: 'Failed',
+                message: 'Failed to create material.',
+                type: 'error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -92,7 +111,11 @@ export default function InventoryManagement() {
 
     const handleAddStock = async () => {
         if (!stockForm.id || !stockForm.amount) {
-            Alert.alert('Error', 'Quantity is required.');
+            showToast({
+                title: 'Missing Info',
+                message: 'Quantity is required.',
+                type: 'warning'
+            });
             return;
         }
         setSubmitting(true);
@@ -101,8 +124,17 @@ export default function InventoryManagement() {
             setIsStockModalVisible(false);
             setStockForm({ id: null, name: '', amount: '' });
             fetchData();
+            showToast({
+                title: 'Stock Updated',
+                message: 'Successfully updated material availability.',
+                type: 'success'
+            });
         } catch (error) {
-            Alert.alert('Error', 'Failed to update stock.');
+            showToast({
+                title: 'Update Failed',
+                message: 'Failed to update stock.',
+                type: 'error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -113,8 +145,17 @@ export default function InventoryManagement() {
             try {
                 await inventoryService.deleteMaterial(id);
                 fetchData();
+                showToast({
+                    title: 'Deleted',
+                    message: 'Material removed from inventory.',
+                    type: 'success'
+                });
             } catch (error: any) {
-                Alert.alert('Error', error.response?.data?.error || 'Failed to delete material.');
+                showToast({
+                    title: 'Error',
+                    message: error.response?.data?.error || 'Failed to delete material.',
+                    type: 'error'
+                });
             }
         };
 
@@ -136,8 +177,17 @@ export default function InventoryManagement() {
             try {
                 await inventoryService.deleteProduct(id);
                 fetchData();
+                showToast({
+                    title: 'Deleted',
+                    message: 'Product removed from catalog.',
+                    type: 'success'
+                });
             } catch (error) {
-                Alert.alert('Error', 'Failed to delete product.');
+                showToast({
+                    title: 'Error',
+                    message: 'Failed to delete product.',
+                    type: 'error'
+                });
             }
         };
 

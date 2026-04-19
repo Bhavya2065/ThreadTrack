@@ -9,8 +9,10 @@ import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { EmptyState } from '../../src/components/EmptyState';
 import { Tokens } from '../../src/theme/tokens';
+import { useToast } from '../../src/context/ToastContext';
 
 export default function AdminOrders() {
+    const { showToast } = useToast();
     const router = useRouter();
     const theme = useTheme();
     const styles = createStyles(theme);
@@ -50,8 +52,8 @@ export default function AdminOrders() {
         fetchData();
     };
 
-    const handleUpdateStatus = async (orderId: number, status: string, skipCheck = false) => {
-        if (status === 'Completed' && !skipCheck) {
+    const handleUpdateStatus = async (orderId: number, reqStatus: string, skipCheck = false) => {
+        if (reqStatus === 'Completed' && !skipCheck) {
             const order = orders.find(o => o.OrderID === orderId);
             const progress = order ? (order.ProducedQuantity / order.Quantity) : 0;
             if (progress < 1) {
@@ -63,16 +65,30 @@ export default function AdminOrders() {
             }
         }
         try {
-            await orderService.updateOrderStatus(orderId, status);
+            if (reqStatus === 'Approved') {
+                await orderService.approveOrder(orderId);
+            } else if (reqStatus === 'Manufacturing') {
+                await orderService.startManufacturing(orderId);
+            } else {
+                await orderService.updateOrderStatus(orderId, reqStatus);
+            }
             fetchData();
         } catch (error: any) {
-            alert(error.response?.data?.error || 'Failed to update status');
+            showToast({
+                title: 'Error',
+                message: error.response?.data?.error || 'Failed to update status',
+                type: 'error'
+            });
         }
     };
 
     const handleConfirmModal = async () => {
         if (!reasonText.trim()) {
-            alert('Please provide a reason.');
+            showToast({
+                title: 'Required',
+                message: 'Please provide a reason.',
+                type: 'warning'
+            });
             return;
         }
         if (selectedOrderId && modalMode) {
@@ -85,8 +101,17 @@ export default function AdminOrders() {
                 }
                 setIsReasonModalVisible(false);
                 fetchData();
+                showToast({
+                    title: 'Success',
+                    message: `Order ${modalMode === 'Cancel' ? 'cancelled' : 'finalized'} successfully`,
+                    type: 'success'
+                });
             } catch (error) {
-                alert(`Failed to ${modalMode.toLowerCase()} order`);
+                showToast({
+                    title: 'Action Failed',
+                    message: `Failed to ${modalMode?.toLowerCase()} order`,
+                    type: 'error'
+                });
             } finally {
                 setSubmittingModal(false);
             }
@@ -189,7 +214,11 @@ export default function AdminOrders() {
                                     </View>
 
                                     <View style={styles.orderProgress}>
-                                        <Text style={[styles.statusText, order.Status === 'Inquiry' && { color: theme.colors.tertiary }]}>{order.Status}</Text>
+                                        <Text style={[styles.statusText,
+                                        order.Status === 'Inquiry' && { color: theme.colors.tertiary },
+                                        order.Status === 'Approved' && { color: theme.colors.primary },
+                                        order.Status === 'Manufacturing' && { color: theme.colors.secondary }
+                                        ]}>{order.Status}</Text>
                                         <Text style={styles.unitsText}>{order.ProducedQuantity} / {order.Quantity} units</Text>
                                     </View>
 
@@ -205,15 +234,18 @@ export default function AdminOrders() {
 
                                     <View style={styles.cardActions}>
                                         {order.Status === 'Inquiry' && (
-                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Pending')} style={[styles.actionButton, { backgroundColor: theme.colors.tertiary }]} labelStyle={{ fontWeight: 'normal' }}>Approve</Button>
+                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Pending')} style={[styles.actionButton, { backgroundColor: theme.colors.tertiary }]} labelStyle={{ fontWeight: 'normal' }}>Accept Inquiry</Button>
                                         )}
                                         {order.Status === 'Pending' && (
-                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'In Progress')} style={styles.actionButton} labelStyle={{ fontWeight: 'normal' }}>Start Mfg</Button>
+                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Approved')} style={[styles.actionButton, { backgroundColor: theme.colors.primary }]} labelStyle={{ fontWeight: 'normal' }}>Approve</Button>
                                         )}
-                                        {order.Status === 'In Progress' && (
-                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Completed')} style={[styles.actionButton, { backgroundColor: theme.colors.primary }]} labelStyle={{ fontWeight: 'normal' }}>Finalize</Button>
+                                        {order.Status === 'Approved' && (
+                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Manufacturing')} style={[styles.actionButton, { backgroundColor: '#4CAF50' }]} labelStyle={{ fontWeight: 'normal', color: 'white' }}>Start Mfg</Button>
                                         )}
-                                        <Button mode="outlined" compact textColor={theme.colors.error} onPress={() => handleCancelOrder(order.OrderID)} style={[styles.actionButton, { borderColor: theme.colors.error }]}>Cancel</Button>
+                                        {order.Status === 'Manufacturing' && (
+                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Completed')} style={styles.actionButton} labelStyle={{ fontWeight: 'normal' }}>Finalize</Button>
+                                        )}
+                                        <Button mode="outlined" compact textColor={theme.colors.error} onPress={() => handleCancelOrder(order.OrderID)} style={[styles.actionButton, { borderColor: theme.colors.error }]}>{order.Status === 'Pending' ? 'Reject' : 'Cancel'}</Button>
                                     </View>
                                 </GlassCard>
                             </TouchableOpacity>

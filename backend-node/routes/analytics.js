@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const auth = require('../middleware/authMiddleware');
+const { logAction } = require('../utils/auditLogger');
 
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 
@@ -9,6 +10,15 @@ const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8
 router.get('/predict', auth(['Admin']), async (req, res) => {
     try {
         const days = req.query.days || 7;
+
+        // Log analytics access
+        await logAction({
+            userId: req.user.id,
+            action: 'VIEW_PREDICTIONS',
+            details: { days, timestamp: new Date().toISOString() },
+            ipAddress: req.ip
+        });
+
         const response = await axios.get(`${PYTHON_SERVICE_URL}/predict?days=${days}`);
         res.json(response.data);
     } catch (err) {
@@ -22,6 +32,14 @@ router.get('/production-summary', auth(['Admin']), async (req, res) => {
     try {
         const { poolPromise, sql } = require('../config/db');
         const pool = await poolPromise;
+
+        // Log analytics access
+        await logAction({
+            userId: req.user.id,
+            action: 'VIEW_PRODUCTION_SUMMARY',
+            details: { timestamp: new Date().toISOString() },
+            ipAddress: req.ip
+        });
 
         // 1. Weekly Production Output (Last 7 days)
         const weeklyResult = await pool.request().query(`

@@ -100,6 +100,24 @@ async function runMigrations() {
             END
         `);
 
+        // 5. Create AuditLogs table
+        console.log('Creating AuditLogs table...');
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID('AuditLogs') AND type = 'U')
+            BEGIN
+                CREATE TABLE AuditLogs (
+                    LogID INT PRIMARY KEY IDENTITY(1,1),
+                    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+                    Action NVARCHAR(100) NOT NULL,
+                    EntityName NVARCHAR(50),
+                    EntityID INT,
+                    Details NVARCHAR(MAX),
+                    IPAddress NVARCHAR(50),
+                    CreatedAt DATETIME DEFAULT GETUTCDATE()
+                );
+            END
+        `);
+
         console.log('✅ Migrations completed successfully');
         process.exit(0);
     } catch (err) {

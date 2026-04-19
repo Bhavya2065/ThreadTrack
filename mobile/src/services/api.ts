@@ -153,6 +153,8 @@ export const orderService = {
     getBuyerOrders: (buyerId: number) => api.get(`/orders/buyer/${buyerId}`),
     createOrder: (orderData: any) => api.post('/orders', orderData),
     updateOrderStatus: (id: number, status: string, completionNotes?: string) => api.put(`/orders/${id}`, { status, completionNotes }),
+    approveOrder: (id: number) => api.put(`/orders/${id}/approve`),
+    startManufacturing: (id: number) => api.put(`/orders/${id}/manufacture`),
     cancelOrder: (id: number, reason?: string) => api.delete(`/orders/${id}`, { data: { reason } }),
     getTracking: (id: string) => api.get(`/orders/track/${id}`),
 };
