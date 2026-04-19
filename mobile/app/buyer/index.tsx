@@ -231,7 +231,7 @@ export default function BuyerTracking() {
                                     </View>
                                 </View>
 
-                                <Text style={styles.orderDetailText}>Placed on {new Date(order.OrderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</Text>
+                                <Text style={styles.orderDetailText}>Placed on {new Date(order.OrderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {new Date(order.OrderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
 
                                 <View style={styles.statusRow}>
                                     <View style={styles.statusItem}>

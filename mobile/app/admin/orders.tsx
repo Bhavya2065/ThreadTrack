@@ -207,7 +207,9 @@ export default function AdminOrders() {
                                             <Text style={[styles.buyerText, { marginBottom: 0, marginLeft: 6 }]}>
                                                 {(() => {
                                                     const d = new Date(order.OrderDate);
-                                                    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                                                    const date = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                                                    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                                    return `${date} • ${time}`;
                                                 })()}
                                             </Text>
                                         </View>
