@@ -39,6 +39,8 @@ export default function InventoryManagement() {
                     amount: refillAmount as string
                 });
                 setIsStockModalVisible(true);
+                // Clear params after opening so it doesn't re-trigger on material updates
+                router.setParams({ refillMaterialId: undefined, refillAmount: undefined });
             }
         }
     }, [refillMaterialId, refillAmount, materials]);
@@ -352,7 +354,7 @@ export default function InventoryManagement() {
 
             {/* Add Stock Modal */}
             <Portal>
-                <Modal visible={isStockModalVisible} onDismiss={() => setIsStockModalVisible(false)} contentContainerStyle={styles.modal}>
+                <Modal visible={isStockModalVisible} onDismiss={() => setIsStockModalVisible(false)} contentContainerStyle={[styles.modal, styles.responsiveModal]}>
                     <Text variant="headlineSmall" style={styles.modalTitle}>Refill Stock</Text>
                     <Text style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}>Adding to: {stockForm.name}</Text>
                     <TextInput
@@ -374,7 +376,7 @@ export default function InventoryManagement() {
             </Portal>
 
             <Portal>
-                <Modal visible={isMaterialModalVisible} onDismiss={() => setIsMaterialModalVisible(false)} contentContainerStyle={styles.modal}>
+                <Modal visible={isMaterialModalVisible} onDismiss={() => setIsMaterialModalVisible(false)} contentContainerStyle={[styles.modal, styles.responsiveModal]}>
                     <Text variant="headlineSmall" style={styles.modalTitle}>New Material</Text>
                     <TextInput label="Name" value={materialForm.name} onChangeText={t => setMaterialForm({ ...materialForm, name: t })} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
                     <TextInput label="Initial Stock" value={materialForm.stock} onChangeText={t => setMaterialForm({ ...materialForm, stock: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />

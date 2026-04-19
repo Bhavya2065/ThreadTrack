@@ -27,6 +27,7 @@ router.get('/', auth(['Admin', 'Worker']), async (req, res) => {
             JOIN Products p ON o.ProductID = p.ProductID 
             JOIN Users u ON o.BuyerID = u.UserID
             ${req.user.role === 'Worker' ? "WHERE o.Status = 'Manufacturing'" : ""}
+            ORDER BY o.OrderDate DESC
         `);
         res.json(result.recordset);
     } catch (err) {
@@ -311,10 +312,10 @@ router.put('/:id/approve', auth(['Admin']), async (req, res) => {
         const pool = await poolPromise;
         const result = await pool.request()
             .input('id', sql.Int, id)
-            .query("UPDATE Orders SET Status = 'Approved' WHERE OrderID = @id AND Status = 'Pending'");
+            .query("UPDATE Orders SET Status = 'Approved' WHERE OrderID = @id AND Status IN ('Pending', 'Inquiry')");
 
         if (result.rowsAffected[0] === 0) {
-            return res.status(400).json({ error: 'Order not found or not in Pending state' });
+            return res.status(400).json({ error: 'Order not found or not in valid state for approval' });
         }
 
         await logAction({

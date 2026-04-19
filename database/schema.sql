@@ -45,7 +45,7 @@ CREATE TABLE Orders (
     BuyerID INT FOREIGN KEY REFERENCES Users(UserID),
     ProductID INT FOREIGN KEY REFERENCES Products(ProductID),
     Quantity INT NOT NULL,
-    Status NVARCHAR(20) DEFAULT 'Pending' CHECK (Status IN ('Pending', 'In Progress', 'Completed', 'Cancelled')),
+    Status NVARCHAR(20) DEFAULT 'Pending' CHECK (Status IN ('Pending', 'Approved', 'Manufacturing', 'In Progress', 'Completed', 'Cancelled', 'Inquiry')),
     OrderDate DATETIME DEFAULT GETDATE(),
     CompletionDate DATETIME,
     CompletionNotes NVARCHAR(MAX)

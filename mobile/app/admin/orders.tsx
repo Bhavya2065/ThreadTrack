@@ -235,10 +235,7 @@ export default function AdminOrders() {
 
 
                                     <View style={styles.cardActions}>
-                                        {order.Status === 'Inquiry' && (
-                                            <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Pending')} style={[styles.actionButton, { backgroundColor: theme.colors.tertiary }]} labelStyle={{ fontWeight: 'normal' }}>Accept Inquiry</Button>
-                                        )}
-                                        {order.Status === 'Pending' && (
+                                        {(order.Status === 'Pending' || order.Status === 'Inquiry') && (
                                             <Button mode="contained" compact onPress={() => handleUpdateStatus(order.OrderID, 'Approved')} style={[styles.actionButton, { backgroundColor: theme.colors.primary }]} labelStyle={{ fontWeight: 'normal' }}>Approve</Button>
                                         )}
                                         {order.Status === 'Approved' && (
@@ -265,7 +262,7 @@ export default function AdminOrders() {
             </ScrollView>
 
             <Portal>
-                <Modal visible={isReasonModalVisible} onDismiss={() => setIsReasonModalVisible(false)} contentContainerStyle={styles.modal}>
+                <Modal visible={isReasonModalVisible} onDismiss={() => setIsReasonModalVisible(false)} contentContainerStyle={[styles.modal, styles.responsiveModal]}>
                     <Text variant="headlineSmall" style={styles.modalTitle}>{modalMode === 'Cancel' ? 'Cancel Order?' : 'Incomplete Order'}</Text>
                     <Text style={styles.modalSubtitle}>
                         {modalMode === 'Cancel' ? 'Provide a reason for cancellation. This action is permanent.' : 'Production is not yet 100% finished. Why are you closing it early?'}

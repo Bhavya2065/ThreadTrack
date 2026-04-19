@@ -55,7 +55,7 @@ async function runMigrations() {
             
             IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Orders_Status')
             BEGIN
-                ALTER TABLE Orders ADD CONSTRAINT CK_Orders_Status CHECK (Status IN ('Inquiry', 'Pending', 'In Progress', 'Completed', 'Cancelled'))
+                ALTER TABLE Orders ADD CONSTRAINT CK_Orders_Status CHECK (Status IN ('Inquiry', 'Pending', 'Approved', 'Manufacturing', 'In Progress', 'Completed', 'Cancelled'))
             END
         `);
 
