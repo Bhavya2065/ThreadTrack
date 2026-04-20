@@ -130,10 +130,10 @@ export default function AdminAnalytics() {
                 <View style={styles.mainContent}>
                     {/* KPI Section */}
                     <View style={styles.kpiRow}>
-                        <KPICard index={0} icon={Package} label="Orders" value="156" color={theme.colors.primary} />
-                        <KPICard index={1} icon={Zap} label="Efficiency" value="89%" color={theme.colors.secondary} />
-                        <KPICard index={2} icon={Activity} label="Growth" value="+12%" color={theme.colors.tertiary} />
-                        <KPICard index={3} icon={AlertCircle} label="Alerts" value="3" color={Tokens.colors.warning} />
+                        <KPICard index={0} icon={Package} label="Orders" value={analytics?.stats?.activeOrders?.toString() || "0"} color={theme.colors.primary} />
+                        <KPICard index={1} icon={Zap} label="Efficiency" value={`${analytics?.stats?.efficiency || 0}%`} color={theme.colors.secondary} />
+                        <KPICard index={2} icon={TrendingUp} label="Growth" value={`${analytics?.stats?.growth >= 0 ? '+' : ''}${analytics?.stats?.growth || 0}%`} color={theme.colors.tertiary} />
+                        <KPICard index={3} icon={AlertCircle} label="Alerts" value={analytics?.stats?.alerts?.toString() || "0"} color={Tokens.colors.warning} />
                     </View>
 
                     {/* Analytics Section */}

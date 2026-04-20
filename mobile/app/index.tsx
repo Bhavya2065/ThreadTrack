@@ -54,7 +54,12 @@ export default function LoginScreen() {
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace(`/${role.toLowerCase()}` as any);
+      
+      // Handle routing based on role, mapping Super Admin to the admin portal
+      const targetRole = role.toLowerCase();
+      const route = (targetRole === 'super admin' || targetRole === 'admin') ? 'admin' : targetRole;
+      
+      router.replace(`/${route}` as any);
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const errorMsg = err.response?.data?.message || 'Invalid username or password.';

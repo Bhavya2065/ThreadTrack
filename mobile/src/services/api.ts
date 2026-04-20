@@ -132,6 +132,12 @@ export const authService = {
     login: (username: string, password: string) => api.post('/auth/login', { username, password }),
     register: (userData: any) => api.post('/auth/register', userData),
     updatePushToken: (userId: number, pushToken: string) => api.post('/auth/update-push-token', { userId, pushToken }),
+    getRoles: () => api.get('/auth/roles'),
+};
+
+export const userService = {
+    getPendingUsers: () => api.get('/users/pending'),
+    processApproval: (userId: number, action: 'Approve' | 'Reject') => api.put(`/users/approval/${userId}`, { action }),
 };
 
 export const inventoryService = {

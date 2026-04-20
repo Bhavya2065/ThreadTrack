@@ -125,13 +125,25 @@ export default function RootLayout() {
       <ToastProvider>
         <PaperProvider theme={theme}>
           <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+            {Platform.OS === 'web' && (
+              <style dangerouslySetInnerHTML={{ __html: `
+                ::-webkit-scrollbar {
+                  width: 0px;
+                  background: transparent;
+                }
+                * {
+                  scrollbar-width: none;
+                  -ms-overflow-style: none;
+                }
+              `}} />
+            )}
             {isHideLayout ? (
               <Stack screenOptions={{ headerShown: false }} />
             ) : (
               <>
                 <ScrollView
                   contentContainerStyle={styles.scrollContent}
-                  showsVerticalScrollIndicator={Platform.OS === 'web'}
+                  showsVerticalScrollIndicator={false}
                 >
                   <View style={styles.main}>
                     <Stack screenOptions={{ headerShown: false }} />

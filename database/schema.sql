@@ -13,7 +13,7 @@ CREATE TABLE Users (
     UserID INT PRIMARY KEY IDENTITY(1,1),
     Username NVARCHAR(50) NOT NULL UNIQUE,
     PasswordHash NVARCHAR(255) NOT NULL,
-    Role NVARCHAR(20) NOT NULL CHECK (Role IN ('Admin', 'Worker', 'Buyer')),
+    Role NVARCHAR(20) NOT NULL CHECK (Role IN ('Admin', 'Worker', 'Buyer', 'Pending', 'Super Admin')),
     CreatedAt DATETIME DEFAULT GETDATE()
 );
 

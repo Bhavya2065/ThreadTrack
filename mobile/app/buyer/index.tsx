@@ -25,6 +25,10 @@ export default function BuyerTracking() {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [orderQuantities, setOrderQuantities] = useState<Record<number, string>>({});
     const [submitting, setSubmitting] = useState(false);
+    const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+    const [isConfirmCancelModalVisible, setIsConfirmCancelModalVisible] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+    const [cancelReason, setCancelReason] = useState('');
     const router = useRouter();
 
     const userInfo = getUserInfo();
@@ -141,6 +145,59 @@ export default function BuyerTracking() {
             showToast({
                 title: 'Order Failed',
                 message: error.response?.data?.error || 'Failed to create order.',
+                type: 'error'
+            });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+    
+    const handleCancelOrder = async () => {
+        if (!selectedOrderId) return;
+        if (!cancelReason.trim()) {
+            showToast({
+                title: 'Required',
+                message: 'Please provide a reason for cancellation.',
+                type: 'warning'
+            });
+            return;
+        }
+
+        // Check if progress is above 0
+        const order = orders.find(o => o.OrderID === selectedOrderId);
+        const progress = order ? (order.ProducedQuantity / order.Quantity) : 0;
+
+        if (progress > 0) {
+            // Show secondary confirmation modal
+            setIsConfirmCancelModalVisible(true);
+            return;
+        }
+
+        // If progress is 0, proceed immediately
+        await finalConfirmCancel();
+    };
+
+    const finalConfirmCancel = async () => {
+        if (!selectedOrderId) return;
+        
+        setSubmitting(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        try {
+            await orderService.cancelOrder(selectedOrderId, cancelReason);
+            showToast({
+                title: 'Order Cancelled',
+                message: 'Your order has been cancelled successfully.',
+                type: 'success'
+            });
+            setIsCancelModalVisible(false);
+            setIsConfirmCancelModalVisible(false);
+            setCancelReason('');
+            setSelectedOrderId(null);
+            fetchData();
+        } catch (error: any) {
+            showToast({
+                title: 'Error',
+                message: error.response?.data?.error || 'Failed to cancel order.',
                 type: 'error'
             });
         } finally {
@@ -276,6 +333,25 @@ export default function BuyerTracking() {
                                     </View>
                                 )}
 
+                                {(order.Status !== 'Completed' && order.Status !== 'Cancelled') && (
+                                    <View style={{ marginTop: 15, flexDirection: 'row', justifyContent: 'flex-end' }}>
+                                        <Button 
+                                            mode="outlined" 
+                                            compact 
+                                            icon="close-circle"
+                                            textColor={theme.colors.error}
+                                            style={{ borderColor: theme.colors.error }}
+                                            onPress={() => {
+                                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                                setSelectedOrderId(order.OrderID);
+                                                setIsCancelModalVisible(true);
+                                            }}
+                                        >
+                                            Cancel Order
+                                        </Button>
+                                    </View>
+                                )}
+
                                 {(order.CompletionNotes) && (
                                     <View style={[styles.notesContainer, order.Status === 'Cancelled' && { backgroundColor: 'rgba(255, 59, 48, 0.05)', borderColor: 'rgba(255, 59, 48, 0.1)' }]}>
                                         <AlertTriangle size={14} color={order.Status === 'Cancelled' ? theme.colors.error : theme.colors.tertiary} />
@@ -364,6 +440,89 @@ export default function BuyerTracking() {
                             labelStyle={{ fontWeight: 'normal' }}
                         >
                             {inquiryInfo.needed ? 'Send Bulk Inquiry' : 'Place Order'}
+                        </Button>
+                    </View>
+                </Modal>
+
+                <Modal
+                    visible={isCancelModalVisible}
+                    onDismiss={() => {
+                        setIsCancelModalVisible(false);
+                        setCancelReason('');
+                        setSelectedOrderId(null);
+                    }}
+                    contentContainerStyle={[styles.modalContent, styles.responsiveModal]}
+                >
+                    <Text variant="headlineSmall" style={[styles.sectionTitle, { marginBottom: 10 }]}>Cancel Order</Text>
+                    <Text style={{ marginBottom: 20, color: theme.colors.onSurfaceVariant }}>
+                        Please tell us why you want to cancel this order.
+                    </Text>
+                    
+                    <TextInput
+                        label="Cancellation Reason"
+                        value={cancelReason}
+                        onChangeText={setCancelReason}
+                        mode="outlined"
+                        multiline
+                        numberOfLines={3}
+                        style={{ backgroundColor: 'transparent', marginBottom: 20 }}
+                        placeholder="e.g., Change of plans, Ordered by mistake..."
+                    />
+
+                    <View style={styles.modalButtons}>
+                        <Button 
+                            onPress={() => {
+                                setIsCancelModalVisible(false);
+                                setCancelReason('');
+                                setSelectedOrderId(null);
+                            }} 
+                            disabled={submitting}
+                        >
+                            Wait, Keep It
+                        </Button>
+                        <Button
+                            mode="contained"
+                            onPress={handleCancelOrder}
+                            loading={submitting}
+                            disabled={submitting || !cancelReason.trim()}
+                            buttonColor={theme.colors.error}
+                        >
+                            Confirm Cancel
+                        </Button>
+                    </View>
+                </Modal>
+
+                <Modal
+                    visible={isConfirmCancelModalVisible}
+                    onDismiss={() => setIsConfirmCancelModalVisible(false)}
+                    contentContainerStyle={[styles.modalContent, styles.responsiveModal]}
+                >
+                    <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                        <AlertTriangle size={48} color={theme.colors.error} />
+                        <Text variant="headlineSmall" style={[styles.sectionTitle, { marginTop: 10, textAlign: 'center' }]}>Production Started!</Text>
+                    </View>
+                    
+                    <Text style={{ textAlign: 'center', marginBottom: 20, color: theme.colors.onSurfaceVariant, lineHeight: 22 }}>
+                        The factory has already started working on this order. Are you sure you want to cancel it now?
+                    </Text>
+
+                    <View style={styles.modalButtons}>
+                        <Button 
+                            onPress={() => setIsConfirmCancelModalVisible(false)} 
+                            disabled={submitting}
+                            textColor={theme.colors.onSurface}
+                        >
+                            No, Go Back
+                        </Button>
+                        <Button
+                            mode="contained"
+                            onPress={finalConfirmCancel}
+                            loading={submitting}
+                            disabled={submitting}
+                            buttonColor={theme.colors.error}
+                            labelStyle={{ fontWeight: 'bold' }}
+                        >
+                            Yes, Cancel it
                         </Button>
                     </View>
                 </Modal>

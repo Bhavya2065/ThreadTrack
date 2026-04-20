@@ -125,6 +125,7 @@ router.post('/log', auth(['Worker']), async (req, res) => {
                     UPDATE Orders 
                     SET Status = CASE 
                         WHEN (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE OrderID = @orderId) >= Quantity THEN 'Completed'
+                        WHEN Status = 'Manufacturing' THEN 'Manufacturing'
                         ELSE 'In Progress'
                     END
                     WHERE OrderID = @orderId

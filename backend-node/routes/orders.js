@@ -155,8 +155,8 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                     `);
 
                 if (materialsCheck.recordset.length === 0) {
-                   // Fallback for Products without ProductMaterials
-                   const fallbackResult = await transaction.request()
+                    // Fallback for Products without ProductMaterials
+                    const fallbackResult = await transaction.request()
                         .input('productId', sql.Int, pId)
                         .query(`
                             SELECT 
@@ -383,8 +383,9 @@ router.delete('/:id', auth(['Buyer', 'Admin']), async (req, res) => {
             if (order.BuyerID !== req.user.id) {
                 return res.status(403).json({ error: 'Access denied. You can only cancel your own orders.' });
             }
-            if (order.Status !== 'Pending') {
-                return res.status(400).json({ error: 'Cannot cancel order. It is already in progress or completed.' });
+            const nonCancellable = ['Completed', 'Cancelled'];
+            if (nonCancellable.includes(order.Status)) {
+                return res.status(400).json({ error: `Cannot cancel order. It is already ${order.Status.toLowerCase()}.` });
             }
         }
 

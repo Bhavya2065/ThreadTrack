@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, Alert, Dimensions, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, KeyboardAvoidingView, Platform, Alert, Dimensions, ScrollView, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Text, TextInput, Button, useTheme, Divider, Snackbar } from 'react-native-paper';
+import { Text, TextInput, Button, useTheme, Divider, Snackbar, Menu } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { authService } from '../src/services/api';
 import { createStyles } from '../assets/Styles/LoginStyles';
@@ -16,6 +16,27 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [role, setRole] = useState('Buyer');
+  const [roles, setRoles] = useState<string[]>(['Buyer', 'Worker']);
+  const [showRoleMenu, setShowRoleMenu] = useState(false);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await authService.getRoles();
+        if (res.data && res.data.length > 0) {
+          const filteredRoles = res.data.filter((r: string) => r !== 'Admin');
+          setRoles(filteredRoles);
+          // If Buyer is in the list, set it as default
+          if (filteredRoles.includes('Buyer')) setRole('Buyer');
+          else if (filteredRoles.length > 0) setRole(filteredRoles[0]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch roles', err);
+      }
+    };
+    fetchRoles();
+  }, []);
 
   const [passwordCriteria, setPasswordCriteria] = useState({
     length: false,
@@ -91,13 +112,11 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      // Role is hardcoded as 'Buyer' on the backend for public registrations, 
-      // but we pass it anyway to match API signature.
-      const res = await authService.register({ username, password, role: 'Buyer' });
+      const res = await authService.register({ username, password, role });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast({
-        title: 'Welcome',
-        message: 'User registered successfully! Please log in.',
+        title: 'Request Sent',
+        message: 'Registration successful! Your Requet is sending to Super Admin for review.',
         type: 'success'
       });
       // Optional: Delay redirect to allow reading the toast
@@ -144,7 +163,10 @@ export default function RegisterScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.header}>
             <View style={styles.logoWrapper}>
               <View style={{ width: 40, height: 40, backgroundColor: theme.colors.primary, borderRadius: 8, transform: [{ rotate: '45deg' }] }} />
@@ -208,6 +230,39 @@ export default function RegisterScreen() {
               textColor={theme.colors.onSurface}
               right={<TextInput.Icon icon={showConfirmPassword ? "eye" : "eye-off"} onPress={() => setShowConfirmPassword(!showConfirmPassword)} />}
             />
+
+            <View style={{ marginBottom: 16 }}>
+              <Menu
+                visible={showRoleMenu}
+                onDismiss={() => setShowRoleMenu(false)}
+                contentStyle={{ backgroundColor: theme.colors.surface }}
+                anchor={
+                  <Pressable onPress={() => setShowRoleMenu(true)}>
+                    <TextInput
+                      label="Requested Role"
+                      value={role}
+                      mode="outlined"
+                      editable={false}
+                      pointerEvents="none"
+                      style={styles.input}
+                      outlineColor={theme.colors.outline}
+                      activeOutlineColor={theme.colors.primary}
+                      textColor={theme.colors.onSurface}
+                      right={<TextInput.Icon icon="chevron-down" />}
+                    />
+                  </Pressable>
+                }
+              >
+                {roles.map((r) => (
+                  <Menu.Item 
+                    key={r} 
+                    onPress={() => { setRole(r); setShowRoleMenu(false); }} 
+                    title={r} 
+                    titleStyle={{ color: theme.colors.onSurface }}
+                  />
+                ))}
+              </Menu>
+            </View>
 
             <Button
               mode="contained"

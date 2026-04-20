@@ -1,9 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useEffect } from 'react';
 import { View, StyleSheet, Animated, Platform, TouchableOpacity } from 'react-native';
 import { Text, Surface, useTheme } from 'react-native-paper';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react-native';
-import { Tokens } from '../theme/tokens';
-
 import { createStyles } from '../../assets/Styles/ToastStyles';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -35,7 +33,14 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     const theme = useTheme();
     const styles = createStyles(theme);
 
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const durationRef = useRef<number>(4000);
+
     const hideToast = useCallback(() => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
         Animated.parallel([
             Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
             Animated.timing(translateY, { toValue: -100, duration: 300, useNativeDriver: true }),
@@ -45,16 +50,40 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     const showToast = useCallback(({ title, message, type = 'info', duration = 4000 }: ToastOptions) => {
         setOptions({ title, message, type });
         setVisible(true);
+        durationRef.current = duration;
+
+        if (timerRef.current) clearTimeout(timerRef.current);
 
         Animated.parallel([
             Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
             Animated.timing(translateY, { toValue: 20, duration: 400, useNativeDriver: true }),
         ]).start();
 
-        setTimeout(() => {
+        timerRef.current = setTimeout(() => {
             hideToast();
         }, duration);
     }, [fadeAnim, translateY, hideToast]);
+
+    const handleMouseEnter = () => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (visible && !timerRef.current) {
+            timerRef.current = setTimeout(() => {
+                hideToast();
+            }, durationRef.current);
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    }, []);
 
     const getToastStyle = () => {
         switch (options.type) {
@@ -71,14 +100,20 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
         <ToastContext.Provider value={{ showToast }}>
             {children}
             {visible && (
-                <Animated.View style={[
-                    styles.container,
-                    { 
-                        opacity: fadeAnim, 
-                        transform: [{ translateY }],
-                        zIndex: 9999 
-                    }
-                ]}>
+                <Animated.View
+                    //@ts-ignore - onMouseEnter and onMouseLeave are supported on Web but not in standard RN types
+                    onMouseEnter={Platform.OS === 'web' ? handleMouseEnter : undefined}
+                    //@ts-ignore
+                    onMouseLeave={Platform.OS === 'web' ? handleMouseLeave : undefined}
+                    style={[
+                        styles.container,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ translateY }],
+                            zIndex: 9999
+                        }
+                    ]}
+                >
                     <Surface style={[styles.toast, { borderLeftColor: accent, borderLeftWidth: 4 }]}>
                         <View style={styles.iconContainer}>{icon}</View>
                         <View style={styles.content}>
