@@ -87,14 +87,30 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 
     const getToastStyle = () => {
         switch (options.type) {
-            case 'success': return { accent: '#4CAF50', icon: <CheckCircle2 size={24} color="#4CAF50" /> };
-            case 'error': return { accent: '#F44336', icon: <AlertCircle size={24} color="#F44336" /> };
-            case 'warning': return { accent: '#FF9800', icon: <AlertCircle size={24} color="#FF9800" /> };
-            default: return { accent: theme.colors.primary, icon: <Info size={24} color={theme.colors.primary} /> };
+            case 'success': return { 
+                bg: '#E1F5E8', 
+                text: '#1B5E20', 
+                icon: <CheckCircle2 size={22} color="#1B5E20" /> 
+            };
+            case 'error': return { 
+                bg: '#FFE4E4', 
+                text: '#C62828', 
+                icon: <AlertCircle size={22} color="#C62828" /> 
+            };
+            case 'warning': return { 
+                bg: '#FFF3E0', 
+                text: '#E65100', 
+                icon: <AlertCircle size={22} color="#E65100" /> 
+            };
+            default: return { 
+                bg: '#E3F2FD', 
+                text: '#0D47A1', 
+                icon: <Info size={22} color="#0D47A1" /> 
+            };
         }
     };
 
-    const { accent, icon } = getToastStyle();
+    const { bg, text, icon } = getToastStyle();
 
     return (
         <ToastContext.Provider value={{ showToast }}>
@@ -114,16 +130,18 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
                         }
                     ]}
                 >
-                    <Surface style={[styles.toast, { borderLeftColor: accent, borderLeftWidth: 4 }]}>
-                        <View style={styles.iconContainer}>{icon}</View>
+                    <View style={[styles.toast, { backgroundColor: bg }]}>
+                        <View style={styles.iconCircle}>
+                            {icon}
+                        </View>
                         <View style={styles.content}>
-                            <Text style={styles.title}>{options.title}</Text>
-                            <Text style={styles.message}>{options.message}</Text>
+                            <Text style={[styles.title, { color: text }]}>{options.title}</Text>
+                            <Text style={[styles.message, { color: text }]}>{options.message}</Text>
                         </View>
                         <TouchableOpacity onPress={hideToast} style={styles.closeButton}>
-                            <X size={18} color={theme.colors.onSurfaceVariant} />
+                            <X size={18} color={text} />
                         </TouchableOpacity>
-                    </Surface>
+                    </View>
                 </Animated.View>
             )}
         </ToastContext.Provider>
