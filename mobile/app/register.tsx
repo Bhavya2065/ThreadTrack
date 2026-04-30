@@ -8,6 +8,9 @@ import { createStyles } from '../assets/Styles/LoginStyles';
 import { GlassCard } from '../src/components/v2/GlassCard';
 import { useToast } from '../src/context/ToastContext';
 
+import { CustomDropdown } from '../src/components/v2/CustomDropdown';
+import { ShoppingBag, HardHat, User } from 'lucide-react-native';
+
 export default function RegisterScreen() {
   const { showToast } = useToast();
   const [username, setUsername] = useState('');
@@ -18,7 +21,7 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState('Buyer');
   const [roles, setRoles] = useState<string[]>(['Buyer', 'Worker']);
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  // Remove showRoleMenu state as it's now handled internally by CustomDropdown
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -231,38 +234,18 @@ export default function RegisterScreen() {
               right={<TextInput.Icon icon={showConfirmPassword ? "eye" : "eye-off"} onPress={() => setShowConfirmPassword(!showConfirmPassword)} />}
             />
 
-            <View style={{ marginBottom: 16 }}>
-              <Menu
-                visible={showRoleMenu}
-                onDismiss={() => setShowRoleMenu(false)}
-                contentStyle={{ backgroundColor: theme.colors.surface }}
-                anchor={
-                  <Pressable onPress={() => setShowRoleMenu(true)}>
-                    <TextInput
-                      label="Requested Role"
-                      value={role}
-                      mode="outlined"
-                      editable={false}
-                      pointerEvents="none"
-                      style={styles.input}
-                      outlineColor={theme.colors.outline}
-                      activeOutlineColor={theme.colors.primary}
-                      textColor={theme.colors.onSurface}
-                      right={<TextInput.Icon icon="chevron-down" />}
-                    />
-                  </Pressable>
-                }
-              >
-                {roles.map((r) => (
-                  <Menu.Item 
-                    key={r} 
-                    onPress={() => { setRole(r); setShowRoleMenu(false); }} 
-                    title={r} 
-                    titleStyle={{ color: theme.colors.onSurface }}
-                  />
-                ))}
-              </Menu>
-            </View>
+            <CustomDropdown
+              label="Requested Role"
+              value={role}
+              onSelect={setRole}
+              options={roles.map(r => ({
+                label: r,
+                value: r,
+                icon: r.toLowerCase() === 'buyer' ? <ShoppingBag size={18} color="#64748b" /> : 
+                      r.toLowerCase() === 'worker' ? <HardHat size={18} color="#64748b" /> : 
+                      <User size={18} color="#64748b" />
+              }))}
+            />
 
             <Button
               mode="contained"

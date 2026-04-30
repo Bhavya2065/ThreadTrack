@@ -5,6 +5,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { inventoryService } from '../../src/services/api';
 import { createStyles } from '../../assets/Styles/InventoryMgmtStyles';
 import { useToast } from '../../src/context/ToastContext';
+import { CustomDropdown } from '../../src/components/v2/CustomDropdown';
+import { Layers } from 'lucide-react-native';
 
 export default function AddProduct() {
     const { showToast } = useToast();
@@ -132,135 +134,24 @@ export default function AddProduct() {
                         disabled={!!productForm.id}
                     />
 
-                    <View style={{ width: '100%', marginBottom: 16 }}>
-                        <Menu
-                            visible={isMaterialMenuVisible}
-                            onDismiss={() => setIsMaterialMenuVisible(false)}
-                            anchor={
-                                <Pressable
-                                    onPress={() => setIsMaterialMenuVisible(true)}
-                                    style={{
-                                        borderWidth: 1,
-                                        borderColor: theme.colors.outline,
-                                        borderRadius: 10,
-                                        paddingHorizontal: 16,
-                                        height: 56,
-                                        justifyContent: 'center',
-                                        backgroundColor: theme.colors.surface,
-                                        width: '100%'
-                                    }}
-                                >
-                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingRight: 40, alignItems: 'center' }}>
-                                        {productForm.materialIds.length === 0 ? (
-                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 16, letterSpacing: 0.15 }}>Select the Materials</Text>
-                                        ) : (
-                                            productForm.materialIds.map(id => {
-                                                const m = materials.find(mat => mat.MaterialID.toString() === id);
-                                                return m ? (
-                                                    <Chip
-                                                        key={id}
-                                                        compact
-                                                        style={{
-                                                            height: 30,
-                                                            backgroundColor: theme.colors.secondaryContainer,
-                                                            justifyContent: 'center',
-                                                            alignItems: 'center',
-                                                            paddingHorizontal: 0
-                                                        }}
-                                                        textStyle={{
-                                                            fontSize: 11,
-                                                            color: theme.colors.onSecondaryContainer,
-                                                            lineHeight: 16,
-                                                            marginVertical: 0,
-                                                            textAlignVertical: 'center',
-                                                            paddingVertical: 0
-                                                        }}
-                                                    >
-                                                        {m.Name}
-                                                    </Chip>
-                                                ) : null;
-                                            })
-                                        )}
-                                    </View>
-                                    <View style={{ position: 'absolute', right: 4, top: 8 }}>
-                                        <IconButton icon={isMaterialMenuVisible ? "chevron-up" : "chevron-down"} size={24} style={{ margin: 0 }} />
-                                    </View>
-                                </Pressable>
-                            }
-                            contentStyle={{
-                                backgroundColor: theme.colors.surface,
-                                borderRadius: 12,
-                                paddingVertical: 8,
-                                width: width * 0.9,
-                                maxWidth: 500
-                            }}
-                        >
-                            <Menu.Item
-                                onPress={() => {
-                                    if (productForm.materialIds.length === materials.length) {
-                                        setProductForm({ ...productForm, materialIds: [] });
-                                    } else {
-                                        setProductForm({ ...productForm, materialIds: materials.map(m => m.MaterialID.toString()) });
-                                    }
-                                }}
-                                title={productForm.materialIds.length === materials.length ? "Deselect All" : "Select All Items"}
-                                leadingIcon={productForm.materialIds.length === materials.length ? "checkbox-multiple-marked" : "checkbox-multiple-blank-outline"}
-                            />
-                            <View style={{ height: 1, backgroundColor: theme.colors.surfaceVariant, marginVertical: 4 }} />
-                            <Text style={{
-                                paddingHorizontal: 16,
-                                paddingVertical: 8,
-                                fontSize: 12,
-                                fontWeight: 'normal',
-                                color: theme.colors.primary,
-                                letterSpacing: 1
-                            }}>
-                                Materials List
-                            </Text>
-                            <ScrollView style={{ maxHeight: 250 }}>
-                                {materials.map(m => {
-                                    const isSelected = productForm.materialIds.includes(m.MaterialID.toString());
-                                    return (
-                                        <Menu.Item
-                                            key={m.MaterialID}
-                                            onPress={() => {
-                                                const newIds = isSelected
-                                                    ? productForm.materialIds.filter(id => id !== m.MaterialID.toString())
-                                                    : [...productForm.materialIds, m.MaterialID.toString()];
-                                                setProductForm({ ...productForm, materialIds: newIds });
-                                            }}
-                                            title={m.Name}
-                                            leadingIcon={isSelected ? "checkbox-marked" : "checkbox-blank-outline"}
-                                            style={{
-                                                backgroundColor: isSelected ? (theme.dark ? 'rgba(0, 212, 255, 0.1)' : 'rgba(0, 212, 255, 0.05)') : 'transparent',
-                                                marginHorizontal: 8,
-                                                borderRadius: 8,
-                                                height: 48
-                                            }}
-                                            titleStyle={{
-                                                color: isSelected ? theme.colors.primary : theme.colors.onSurface,
-                                                fontWeight: isSelected ? '600' : '400',
-                                                fontSize: 15
-                                            }}
-                                        />
-                                    );
-                                })}
-                            </ScrollView>
-                            <View style={{ borderTopWidth: 1, borderTopColor: theme.colors.surfaceVariant, marginTop: 4 }}>
-                                <Menu.Item
-                                    onPress={() => setIsMaterialMenuVisible(false)}
-                                    title="Close Selection"
-                                    titleStyle={{
-                                        color: theme.colors.primary,
-                                        fontWeight: '700',
-                                        textAlign: 'center',
-                                        fontSize: 14
-                                    }}
-                                    style={{ height: 44 }}
-                                />
-                            </View>
-                        </Menu>
-                    </View>
+                    <CustomDropdown
+                        label="Raw Materials"
+                        value={productForm.materialIds}
+                        multiSelect
+                        placeholder="Select the Materials"
+                        onSelect={(id) => {
+                            const isSelected = productForm.materialIds.includes(id);
+                            const newIds = isSelected
+                                ? productForm.materialIds.filter(mid => mid !== id)
+                                : [...productForm.materialIds, id];
+                            setProductForm({ ...productForm, materialIds: newIds });
+                        }}
+                        options={materials.map(m => ({
+                            label: m.Name,
+                            value: m.MaterialID.toString(),
+                            icon: <Layers size={18} color="#64748b" />
+                        }))}
+                    />
 
                     <TextInput label="Qty per Unit" value={productForm.quantityPerUnit} onChangeText={t => setProductForm({ ...productForm, quantityPerUnit: t })} keyboardType="numeric" mode="outlined" style={[styles.input, { backgroundColor: theme.colors.surface }]} outlineStyle={{ borderRadius: 10 }} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
                     <TextInput label="Unit Price (₹)" value={productForm.price} onChangeText={t => setProductForm({ ...productForm, price: t })} keyboardType="numeric" mode="outlined" style={[styles.input, { backgroundColor: theme.colors.surface }]} outlineStyle={{ borderRadius: 10 }} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
