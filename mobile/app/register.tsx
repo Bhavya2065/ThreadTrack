@@ -21,7 +21,23 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState('Buyer');
   const [roles, setRoles] = useState<string[]>(['Buyer', 'Worker']);
-  // Remove showRoleMenu state as it's now handled internally by CustomDropdown
+
+  const [usernameCriteria, setUsernameCriteria] = useState({
+    length: false,
+    noSpace: true,
+    letterAndDigit: false,
+  });
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    lowercase: false,
+    uppercase: false,
+    number: false,
+    noSpace: true,
+    specialChar: false,
+  });
+
+  const [isUsernameFocused, setIsUsernameFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -30,7 +46,6 @@ export default function RegisterScreen() {
         if (res.data && res.data.length > 0) {
           const filteredRoles = res.data.filter((r: string) => r !== 'Admin');
           setRoles(filteredRoles);
-          // If Buyer is in the list, set it as default
           if (filteredRoles.includes('Buyer')) setRole('Buyer');
           else if (filteredRoles.length > 0) setRole(filteredRoles[0]);
         }
@@ -41,20 +56,19 @@ export default function RegisterScreen() {
     fetchRoles();
   }, []);
 
-  const [passwordCriteria, setPasswordCriteria] = useState({
-    length: false,
-    lowercase: false,
-    uppercase: false,
-    number: false,
-    noSpace: true,
-    specialChar: false,
-  });
-
-  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
-
   const theme = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
+
+  // Real-time username validation
+  const validateUsername = (user: string) => {
+    setUsername(user);
+    setUsernameCriteria({
+      length: user.length >= 6,
+      noSpace: !/\s/.test(user),
+      letterAndDigit: /[a-zA-Z]/.test(user) && /[0-9]/.test(user),
+    });
+  };
 
   // Real-time password validation
   const validatePassword = (pass: string) => {
@@ -82,11 +96,13 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (username.length < 4) {
+    // Username validation
+    const { length: uLength, noSpace: uNoSpace, letterAndDigit: uLetterAndDigit } = usernameCriteria;
+    if (!uLength || !uNoSpace || !uLetterAndDigit) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       showToast({
         title: 'Validation',
-        message: 'Username must be at least 4 characters.',
+        message: 'Username does not meet all criteria.',
         type: 'warning'
       });
       return;
@@ -182,8 +198,11 @@ export default function RegisterScreen() {
             <TextInput
               label="Username"
               value={username}
-              onChangeText={setUsername}
-              onFocus={() => setIsPasswordFocused(false)}
+              onChangeText={validateUsername}
+              onFocus={() => {
+                setIsUsernameFocused(true);
+                setIsPasswordFocused(false);
+              }}
               mode="outlined"
               style={styles.input}
               outlineColor={theme.colors.outline}
@@ -191,11 +210,26 @@ export default function RegisterScreen() {
               textColor={theme.colors.onSurface}
               autoCapitalize="none"
             />
+
+            {/* Username Checklist - Only shown when username field is focused */}
+            {isUsernameFocused && (
+              <View style={{ marginTop: 8, marginBottom: 16, paddingLeft: 4 }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', marginBottom: 8, color: theme.colors.onSurface }}>
+                  Username must contain the following:
+                </Text>
+                <CriteriaItem label="Minimum 6 characters" met={usernameCriteria.length} />
+                <CriteriaItem label="No blank space is allowed" met={usernameCriteria.noSpace} />
+                <CriteriaItem label="Contain both letter and digit" met={usernameCriteria.letterAndDigit} />
+              </View>
+            )}
             <TextInput
               label="Password"
               value={password}
               onChangeText={validatePassword}
-              onFocus={() => setIsPasswordFocused(true)}
+              onFocus={() => {
+                setIsUsernameFocused(false);
+                setIsPasswordFocused(true);
+              }}
               mode="outlined"
               secureTextEntry={!showPassword}
               style={styles.input}

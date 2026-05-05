@@ -20,6 +20,18 @@ router.get('/roles', async (req, res) => {
 router.post('/register', async (req, res) => {
     try {
         const { username, password, role } = req.body;
+        
+        // Username validation
+        const hasLetter = /[a-zA-Z]/.test(username);
+        const hasDigit = /[0-9]/.test(username);
+        const hasSpace = /\s/.test(username);
+
+        if (!username || username.length < 6 || hasSpace || !hasLetter || !hasDigit) {
+            return res.status(400).json({
+                error: 'Username must be at least 6 characters, contain both letters and digits, and have no spaces.',
+                type: 'validation_error'
+            });
+        }
 
         const pool = await poolPromise;
 
