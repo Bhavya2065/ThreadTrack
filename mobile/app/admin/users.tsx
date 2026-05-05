@@ -91,77 +91,87 @@ export default function UserApprovalPortal() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
             >
                 <View style={styles.mainContent}>
-                    <TransitionView index={0}>
-                        <View style={{ marginBottom: 20 }}>
-                            <Text variant="titleMedium" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 4 }}>
-                                Pending Registrations
-                            </Text>
-                            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, opacity: 0.7 }}>
-                                Review and approve access requests for new system users.
-                            </Text>
-                        </View>
-                    </TransitionView>
-
                     {pendingUsers.length === 0 ? (
-                        <TransitionView index={1}>
-                            <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 60 }}>
-                                <UserCheck size={48} color={theme.colors.secondary} style={{ opacity: 0.5, marginBottom: 16 }} />
-                                <Text style={{ color: theme.colors.onSurfaceVariant }}>All caught up! No pending requests.</Text>
+                        <TransitionView index={1} style={{ flex: 1, justifyContent: 'center', marginTop: '20%' }}>
+                            <View style={{ alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+                                <View style={{ backgroundColor: theme.colors.surfaceVariant, padding: 24, borderRadius: 100, marginBottom: 20, opacity: 0.8 }}>
+                                    <UserCheck size={64} color={theme.colors.primary} />
+                                </View>
+                                <Text variant="titleLarge" style={{ color: theme.colors.onSurface, fontWeight: '700', marginBottom: 8 }}>
+                                    All Caught Up!
+                                </Text>
+                                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', maxWidth: 250 }}>
+                                    There are currently no pending access requests to review.
+                                </Text>
                             </View>
                         </TransitionView>
                     ) : (
-                        pendingUsers.map((user, index) => (
-                            <TransitionView key={user.UserID} index={index + 1}>
-                                <GlassCard style={{ marginBottom: 12, padding: 16 }}>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <View style={{ flex: 1 }}>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 8 }}>
-                                                <User size={18} color={theme.colors.primary} />
-                                                <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{user.Username}</Text>
-                                            </View>
-                                            <View style={{ flexDirection: 'row', gap: 16 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                    <Shield size={14} color={theme.colors.secondary} />
-                                                    <Text variant="bodySmall" style={{ color: theme.colors.secondary }}>{user.RequestedRole}</Text>
-                                                </View>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                    <Clock size={14} color={theme.colors.onSurfaceVariant} />
-                                                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                                                        {new Date(user.CreatedAt).toLocaleDateString()}
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                        </View>
-
-                                        <View style={{ flexDirection: 'row', gap: 8 }}>
-                                            <Button
-                                                mode="contained"
-                                                onPress={() => handleApproval(user.UserID, user.Username, 'Approve')}
-                                                loading={processingId === user.UserID}
-                                                disabled={processingId !== null}
-                                                buttonColor={theme.colors.primary}
-                                                style={{ borderRadius: 8 }}
-                                                labelStyle={{ fontSize: 12, fontWeight: '700' }}
-                                                compact
-                                            >
-                                                Accept
-                                            </Button>
-                                            <Button
-                                                mode="outlined"
-                                                onPress={() => handleApproval(user.UserID, user.Username, 'Reject')}
-                                                disabled={processingId !== null}
-                                                textColor={theme.colors.error}
-                                                style={{ borderColor: theme.colors.error, borderRadius: 8 }}
-                                                labelStyle={{ fontSize: 12, fontWeight: '700' }}
-                                                compact
-                                            >
-                                                Reject
-                                            </Button>
-                                        </View>
-                                    </View>
-                                </GlassCard>
+                        <>
+                            <TransitionView index={0}>
+                                <View style={{ marginBottom: 20 }}>
+                                    <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '700' }}>
+                                        Pending Registrations
+                                    </Text>
+                                    <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, opacity: 0.8 }}>
+                                        Review and approve access requests for new system users.
+                                    </Text>
+                                </View>
                             </TransitionView>
-                        ))
+                            {pendingUsers.map((user, index) => (
+                                <TransitionView key={user.UserID} index={index + 1}>
+                                    <GlassCard style={{ marginBottom: 16, padding: 16, borderRadius: 16 }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <View style={{ flex: 1 }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 10 }}>
+                                                    <View style={{ backgroundColor: theme.colors.primaryContainer, padding: 6, borderRadius: 8 }}>
+                                                        <User size={18} color={theme.colors.primary} />
+                                                    </View>
+                                                    <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '600' }}>{user.Username}</Text>
+                                                </View>
+                                                <View style={{ flexDirection: 'row', gap: 16, paddingLeft: 34 }}>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                        <Shield size={14} color={theme.colors.secondary} />
+                                                        <Text variant="labelMedium" style={{ color: theme.colors.secondary, fontWeight: '600' }}>{user.RequestedRole}</Text>
+                                                    </View>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                        <Clock size={14} color={theme.colors.onSurfaceVariant} />
+                                                        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                                                            {new Date(user.CreatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+
+                                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                <Button
+                                                    mode="contained"
+                                                    onPress={() => handleApproval(user.UserID, user.Username, 'Approve')}
+                                                    loading={processingId === user.UserID}
+                                                    disabled={processingId !== null}
+                                                    buttonColor={theme.colors.primary}
+                                                    style={{ borderRadius: 10, elevation: 0 }}
+                                                    labelStyle={{ fontSize: 12, fontWeight: '700' }}
+                                                    compact
+                                                >
+                                                    Accept
+                                                </Button>
+                                                <Button
+                                                    mode="outlined"
+                                                    onPress={() => handleApproval(user.UserID, user.Username, 'Reject')}
+                                                    disabled={processingId !== null}
+                                                    textColor={theme.colors.error}
+                                                    style={{ borderColor: theme.colors.error, borderRadius: 10 }}
+                                                    labelStyle={{ fontSize: 12, fontWeight: '700' }}
+                                                    compact
+                                                >
+                                                    Reject
+                                                </Button>
+                                            </View>
+                                        </View>
+                                    </GlassCard>
+                                </TransitionView>
+                            ))}
+                        </>
                     )}
                 </View>
             </ScrollView>

@@ -90,19 +90,21 @@ export default function AdminInventory() {
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                 <Button
                                     mode="text"
-                                    icon={() => <FileText size={16} color={theme.colors.primary} />}
+                                    icon={() => <FileText size={16} color={materials.length === 0 ? theme.colors.onSurfaceDisabled : theme.colors.primary} />}
                                     onPress={() => reportExporter.exportInventoryToPDF(materials, "Inventory Report")}
                                     textColor={theme.colors.primary}
                                     labelStyle={{ fontWeight: '700' }}
+                                    disabled={materials.length === 0}
                                 >
                                     PDF
                                 </Button>
                                 <Button
                                     mode="text"
-                                    icon={() => <FileText size={16} color={theme.colors.primary} />}
+                                    icon={() => <FileText size={16} color={materials.length === 0 ? theme.colors.onSurfaceDisabled : theme.colors.primary} />}
                                     onPress={() => reportExporter.exportInventoryToCSV(materials)}
                                     textColor={theme.colors.primary}
                                     labelStyle={{ fontWeight: '700' }}
+                                    disabled={materials.length === 0}
                                 >
                                     CSV
                                 </Button>
@@ -121,40 +123,52 @@ export default function AdminInventory() {
 
                     <TransitionView index={2}>
                         <GlassCard>
-                            {materials.map((item, index) => {
-                                const isLow = item.CurrentStock <= item.MinimumRequired;
-                                return (
-                                    <TouchableOpacity 
-                                        key={item.MaterialID || index} 
-                                        activeOpacity={0.7}
-                                        onPress={() => router.push('/admin/inventory_mgmt')}
-                                    >
-                                        <View style={styles.inventoryItem}>
-                                            <View style={styles.inventoryInfo}>
-                                                <Package size={20} color={isLow ? theme.colors.error : (index % 2 === 0 ? theme.colors.primary : theme.colors.secondary)} />
+                            {materials.length === 0 ? (
+                                <View style={{ padding: 32, alignItems: 'center' }}>
+                                    <Package size={54} color={theme.colors.primary} style={{ marginBottom: 16, opacity: 0.7 }} />
+                                    <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '700', letterSpacing: 0.5 }}>
+                                        No Raw Material Stock
+                                    </Text>
+                                    <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 8, fontWeight: '500', textAlign: 'center' }}>
+                                        Add materials in the management section to get started.
+                                    </Text>
+                                </View>
+                            ) : (
+                                materials.map((item, index) => {
+                                    const isLow = item.CurrentStock <= item.MinimumRequired;
+                                    return (
+                                        <TouchableOpacity 
+                                            key={item.MaterialID || index} 
+                                            activeOpacity={0.7}
+                                            onPress={() => router.push('/admin/inventory_mgmt')}
+                                        >
+                                            <View style={styles.inventoryItem}>
+                                                <View style={styles.inventoryInfo}>
+                                                    <Package size={20} color={isLow ? theme.colors.error : (index % 2 === 0 ? theme.colors.primary : theme.colors.secondary)} />
+                                                    <Text
+                                                        numberOfLines={1}
+                                                        ellipsizeMode="tail"
+                                                        style={[styles.inventoryName, isLow && { color: theme.colors.error }]}
+                                                    >
+                                                        {item.Name}
+                                                    </Text>
+                                                </View>
                                                 <Text
-                                                    numberOfLines={1}
-                                                    ellipsizeMode="tail"
-                                                    style={[styles.inventoryName, isLow && { color: theme.colors.error }]}
+                                                    variant="bodySmall"
+                                                    style={[styles.stockValues, isLow && { color: theme.colors.error, fontWeight: 'bold' }]}
                                                 >
-                                                    {item.Name}
+                                                    {Number(item.CurrentStock).toFixed(2)} {item.Unit}
                                                 </Text>
                                             </View>
-                                            <Text
-                                                variant="bodySmall"
-                                                style={[styles.stockValues, isLow && { color: theme.colors.error, fontWeight: 'bold' }]}
-                                            >
-                                                {Number(item.CurrentStock).toFixed(2)} {item.Unit}
-                                            </Text>
-                                        </View>
-                                        <ProgressBar
-                                            progress={Math.min(item.CurrentStock / (item.MinimumRequired * 5 || 1), 1)}
-                                            color={isLow ? theme.colors.error : (index % 2 === 0 ? theme.colors.primary : theme.colors.secondary)}
-                                            style={styles.progressBar}
-                                        />
-                                    </TouchableOpacity>
-                                );
-                            })}
+                                            <ProgressBar
+                                                progress={Math.min(item.CurrentStock / (item.MinimumRequired * 5 || 1), 1)}
+                                                color={isLow ? theme.colors.error : (index % 2 === 0 ? theme.colors.primary : theme.colors.secondary)}
+                                                style={styles.progressBar}
+                                            />
+                                        </TouchableOpacity>
+                                    );
+                                })
+                            )}
                         </GlassCard>
                     </TransitionView>
                 </View>
