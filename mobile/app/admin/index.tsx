@@ -274,7 +274,9 @@ export default function AdminAnalytics() {
                             </View>
                         ) : (
                             <GlassCard style={styles.analyticsWrapper}>
-                                <Text variant="bodySmall" style={{ textAlign: 'center', color: theme.colors.onSurfaceVariant }}>Predicting requirements...</Text>
+                                <Text variant="bodySmall" style={{ textAlign: 'center', color: theme.colors.onSurfaceVariant }}>
+                                    {predictions.length === 0 ? "No raw materials found in inventory" : "Predicting requirements..."}
+                                </Text>
                             </GlassCard>
                         )}
                     </TransitionView>
