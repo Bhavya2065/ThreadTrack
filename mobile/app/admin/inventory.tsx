@@ -63,7 +63,11 @@ export default function AdminInventory() {
             {!(Platform.OS === 'web' && width >= 768) && (
                 <Appbar.Header style={styles.appbarHeader}>
                     <Appbar.Content title="Inventory" titleStyle={styles.appbarTitle} />
-
+                    <Appbar.Action
+                        icon="cog"
+                        color={theme.colors.onSurfaceVariant}
+                        onPress={() => router.push('/admin/inventory_mgmt')}
+                    />
                     {(Platform.OS !== 'web' || width < 768) && (
                         <>
                             <Appbar.Action
@@ -132,6 +136,15 @@ export default function AdminInventory() {
                                     <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 8, fontWeight: '500', textAlign: 'center' }}>
                                         Add materials in the management section to get started.
                                     </Text>
+                                    <Button 
+                                        mode="contained" 
+                                        onPress={() => router.push('/admin/inventory_mgmt')}
+                                        style={{ marginTop: 24, borderRadius: 12 }}
+                                        contentStyle={{ paddingVertical: 4 }}
+                                        labelStyle={{ fontWeight: '700' }}
+                                    >
+                                        Manage Inventory
+                                    </Button>
                                 </View>
                             ) : (
                                 materials.map((item, index) => {
