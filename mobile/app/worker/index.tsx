@@ -313,10 +313,13 @@ export default function WorkerInput() {
                                 </>
                             ) : (
                                 <EmptyState
-                                    icon={CheckCircle}
-                                    title="All Orders Completed"
-                                    message="Great job! You have finished all active orders. New orders will appear here once assigned."
-                                    iconColor={Tokens.colors.success}
+                                    icon={logs.length === 0 ? PackageOpen : CheckCircle}
+                                    title={logs.length === 0 ? "No Orders Available" : "All Orders Completed"}
+                                    message={logs.length === 0 
+                                        ? "There are currently no orders in manufacturing. New orders will appear here once assigned."
+                                        : "Great job! You have finished all active orders. New orders will appear here once assigned."
+                                    }
+                                    iconColor={logs.length === 0 ? theme.colors.outline : Tokens.colors.success}
                                 />
                             )}
                         </GlassCard>
