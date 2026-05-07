@@ -97,13 +97,23 @@ router.get('/production-summary', auth(['Admin', 'Super Admin']), async (req, re
             ORDER BY totalQuantity DESC
         `);
 
-        // 3. Overall Dashboard KPIs
+        // 3. Overall Dashboard KPIs (with Historical Data for Trends)
         const statsResult = await pool.request().query(`
             SELECT 
-                -- Active Orders Count
+                -- Active Orders & Trend
                 (SELECT COUNT(*) FROM Orders WHERE Status NOT IN ('Completed', 'Cancelled')) as activeOrders,
-                
-                -- Factory Efficiency (Produced / Total ordered for all active manufacturing)
+                (SELECT COUNT(*) FROM Orders WHERE Status = 'Completed' AND CAST(CompletionDate AS DATE) = CAST(GETUTCDATE() AS DATE)) as completedToday,
+                (SELECT 
+                    CASE 
+                        WHEN prev_active = 0 THEN 0
+                        ELSE CAST(ROUND(((curr_active - prev_active) / CAST(prev_active AS FLOAT)) * 100, 1) AS FLOAT)
+                    END
+                FROM (
+                    SELECT (SELECT COUNT(*) FROM Orders WHERE Status NOT IN ('Completed', 'Cancelled')) as curr_active,
+                           (SELECT COUNT(*) FROM Orders WHERE OrderDate <= DATEADD(day, -7, GETUTCDATE()) AND (CompletionDate IS NULL OR CompletionDate > DATEADD(day, -7, GETUTCDATE())) AND Status != 'Cancelled') as prev_active
+                ) as active_counts) as activeOrdersTrend,
+
+                -- Factory Efficiency & Target
                 (SELECT 
                     CASE 
                         WHEN SUM(o.Quantity) = 0 THEN 0
@@ -115,25 +125,23 @@ router.get('/production-summary', auth(['Admin', 'Super Admin']), async (req, re
                     FROM ProductionLogs GROUP BY OrderID
                 ) pl ON o.OrderID = pl.OrderID
                 WHERE o.Status = 'Manufacturing') as efficiency,
+                90 as targetEfficiency,
 
-                -- Weekly Growth (% change in output vs previous week)
+                -- Weekly Production & Trend
+                (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -7, GETUTCDATE())) as totalProduced,
+                (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -14, GETUTCDATE()) AND LogDate < DATEADD(day, -7, GETUTCDATE())) as lastWeekProduced,
                 (SELECT 
                     CASE 
                         WHEN prev.total = 0 THEN 0
-                        ELSE CAST(ROUND(((curr.total - prev.total) / CAST(prev.total AS FLOAT)) * 100, 0) AS INT)
+                        ELSE CAST(ROUND(((curr.total - prev.total) / CAST(prev.total AS FLOAT)) * 100, 1) AS FLOAT)
                     END
                 FROM (
-                    SELECT COALESCE(SUM(QuantityProduced), 0) as total 
-                    FROM ProductionLogs 
-                    WHERE LogDate >= DATEADD(day, -7, GETUTCDATE())
-                ) curr,
-                (
-                    SELECT COALESCE(SUM(QuantityProduced), 0) as total 
-                    FROM ProductionLogs 
-                    WHERE LogDate >= DATEADD(day, -14, GETUTCDATE()) AND LogDate < DATEADD(day, -7, GETUTCDATE())
-                ) prev) as growth,
+                    SELECT (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -7, GETUTCDATE())) as curr,
+                           (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -14, GETUTCDATE()) AND LogDate < DATEADD(day, -7, GETUTCDATE())) as prev
+                ) as production_counts) as productionTrend,
 
-                -- Critical Alerts (Low stock and Overdue orders)
+                -- Critical Alerts
+                (SELECT COUNT(*) FROM RawMaterials WHERE CurrentStock < 10) as lowStockCount,
                 ((SELECT COUNT(*) FROM RawMaterials WHERE CurrentStock < 10) + 
                  (SELECT COUNT(*) FROM Orders WHERE Status = 'Pending' AND OrderDate < DATEADD(day, -3, GETUTCDATE()))) as alerts
         `);

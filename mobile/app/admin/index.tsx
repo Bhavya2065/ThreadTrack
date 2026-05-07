@@ -167,7 +167,7 @@ export default function AdminAnalytics() {
                             label="Active orders" 
                             value={analytics?.stats?.activeOrders?.toString() || "0"} 
                             color="#2196F3" 
-                            trend="+12%"
+                            trend={`${analytics?.stats?.activeOrdersTrend > 0 ? '+' : ''}${analytics?.stats?.activeOrdersTrend || 0}%`}
                             footer={`${analytics?.stats?.completedToday || 0} completed today`}
                         />
                         <KPICard 
@@ -176,7 +176,7 @@ export default function AdminAnalytics() {
                             label="Efficiency rate" 
                             value={`${analytics?.stats?.efficiency || 0}%`} 
                             color="#4CAF50" 
-                            trend="+5.4%"
+                            trend="+0.0%"
                             footer={`Target: ${analytics?.stats?.targetEfficiency || 90}%`}
                         />
                         <KPICard 
@@ -185,7 +185,7 @@ export default function AdminAnalytics() {
                             label="Units produced" 
                             value={analytics?.stats?.totalProduced?.toLocaleString() || "0"} 
                             color="#FF9800" 
-                            trend="+8.1%"
+                            trend={`${analytics?.stats?.productionTrend > 0 ? '+' : ''}${analytics?.stats?.productionTrend || 0}%`}
                             footer={`vs ${analytics?.stats?.lastWeekProduced || 0} last week`}
                         />
                         <KPICard 
