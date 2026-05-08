@@ -20,13 +20,16 @@ export default function InventoryManagement() {
     const [loading, setLoading] = useState(true);
     const [materials, setMaterials] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
+    const [materialTypes, setMaterialTypes] = useState<any[]>([]);
 
     const [isMaterialModalVisible, setIsMaterialModalVisible] = useState(false);
     const [isStockModalVisible, setIsStockModalVisible] = useState(false);
+    const [isTypeSuggestionsVisible, setIsTypeSuggestionsVisible] = useState(false);
+    const [selectedTypeIndex, setSelectedTypeIndex] = useState(-1);
     const [submitting, setSubmitting] = useState(false);
 
     const { refillMaterialId, refillAmount } = useLocalSearchParams();
-    const [materialForm, setMaterialForm] = useState({ name: '', stock: '', unit: '', min: '' });
+    const [materialForm, setMaterialForm] = useState({ name: '', stock: '', unit: '', min: '', typeId: '' });
     const [stockForm, setStockForm] = useState({ id: null as number | null, name: '', amount: '' });
 
     useEffect(() => {
@@ -59,12 +62,14 @@ export default function InventoryManagement() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [mRes, pRes] = await Promise.all([
+            const [mRes, pRes, tRes] = await Promise.all([
                 inventoryService.getMaterials(),
-                inventoryService.getProducts()
+                inventoryService.getProducts(),
+                inventoryService.getMaterialTypes()
             ]);
             setMaterials(mRes.data);
             setProducts(pRes.data);
+            setMaterialTypes(tRes.data);
         } catch (error) {
             showToast({
                 title: 'Data Error',
@@ -91,10 +96,11 @@ export default function InventoryManagement() {
                 materialName: materialForm.name,
                 currentStock: parseFloat(materialForm.stock),
                 unit: materialForm.unit,
-                minimumRequired: parseFloat(materialForm.min || '0')
+                minimumRequired: parseFloat(materialForm.min || '0'),
+                typeId: materialForm.typeId ? parseInt(materialForm.typeId) : null
             });
             setIsMaterialModalVisible(false);
-            setMaterialForm({ name: '', stock: '', unit: '', min: '' });
+            setMaterialForm({ name: '', stock: '', unit: '', min: '', typeId: '' });
             fetchData();
             showToast({
                 title: 'Material Created',
@@ -263,9 +269,9 @@ export default function InventoryManagement() {
                                                 <Text style={styles.chipText}>{m.CurrentStock <= m.MinStockThreshold ? 'Low' : 'Decent'}</Text>
                                             </View>
                                         </View>
-                                        <View style={styles.metaRow}>
-                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>In Stock: {m.CurrentStock.toFixed(2)} {m.Unit}</Text>
-                                        </View>
+                                         <View style={styles.metaRow}>
+                                             <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>{m.TypeName || 'General'} • In Stock: {m.CurrentStock.toFixed(2)} {m.Unit}</Text>
+                                         </View>
                                         <Text style={{ color: theme.colors.error, fontSize: 13, marginTop: 4 }}>Reserve: {m.ReservedStock.toFixed(2)}</Text>
                                     </View>
                                     <View style={styles.actionRow}>
@@ -397,24 +403,96 @@ export default function InventoryManagement() {
                                 <Package size={24} color={theme.colors.primary} />
                             </View>
                             <View>
-                                <Text variant="titleLarge" style={[styles.modalTitle, { marginBottom: 2, fontSize: 22 }]}>Add New Material</Text>
+                                <Text variant="titleLarge" style={[styles.modalTitle, { marginBottom: 2, fontSize: 22 }]}>Add New Raw Material</Text>
                                 <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 14 }}>Register a new raw material to your inventory</Text>
                             </View>
                         </View>
                     </View>
                     
-                    <TextInput 
-                        label="Material Name" 
-                        value={materialForm.name} 
-                        onChangeText={t => setMaterialForm({ ...materialForm, name: t })} 
-                        mode="outlined" 
-                        style={styles.input} 
-                        outlineColor={theme.colors.outline} 
-                        activeOutlineColor={theme.colors.primary} 
-                        textColor={theme.colors.onSurface}
-                        left={<TextInput.Icon icon={() => <Tag size={20} color={theme.colors.onSurfaceVariant} />} />}
-                        outlineStyle={{ borderRadius: 12 }}
-                    />
+                    <View style={{ zIndex: 100 }}>
+                        <TextInput 
+                            label="Material Name" 
+                            value={materialForm.name} 
+                            onChangeText={t => {
+                                setMaterialForm({ ...materialForm, name: t });
+                                setIsTypeSuggestionsVisible(t.length > 0);
+                                setSelectedTypeIndex(-1);
+                            }} 
+                            onFocus={() => materialForm.name.length > 0 && setIsTypeSuggestionsVisible(true)}
+                            mode="outlined" 
+                            style={styles.input} 
+                            outlineColor={theme.colors.outline} 
+                            activeOutlineColor={theme.colors.primary} 
+                            textColor={theme.colors.onSurface}
+                            left={<TextInput.Icon icon={() => <Tag size={20} color={theme.colors.onSurfaceVariant} />} />}
+                            right={materialForm.name.length > 0 ? <TextInput.Icon icon="close" onPress={() => { setMaterialForm({ ...materialForm, name: '', typeId: '' }); setIsTypeSuggestionsVisible(false); setSelectedTypeIndex(-1); }} /> : null}
+                            outlineStyle={{ borderRadius: 12 }}
+                            // @ts-ignore - onKeyPress works on web
+                            onKeyPress={(e: any) => {
+                                if (!isTypeSuggestionsVisible) return;
+                                
+                                const filtered = materialTypes.filter(t => t.TypeName.toLowerCase().includes(materialForm.name.toLowerCase()));
+                                
+                                if (e.nativeEvent.key === 'ArrowDown') {
+                                    setSelectedTypeIndex(prev => (prev < filtered.length - 1 ? prev + 1 : prev));
+                                } else if (e.nativeEvent.key === 'ArrowUp') {
+                                    setSelectedTypeIndex(prev => (prev > 0 ? prev - 1 : prev));
+                                } else if (e.nativeEvent.key === 'Enter' && selectedTypeIndex >= 0) {
+                                    const selected = filtered[selectedTypeIndex];
+                                    setMaterialForm({ ...materialForm, name: selected.TypeName, typeId: selected.ID.toString() });
+                                    setIsTypeSuggestionsVisible(false);
+                                    setSelectedTypeIndex(-1);
+                                    e.preventDefault();
+                                }
+                            }}
+                        />
+
+                        {isTypeSuggestionsVisible && (
+                            <View style={{
+                                position: 'absolute',
+                                top: 56,
+                                left: 0,
+                                right: 0,
+                                backgroundColor: theme.dark ? '#1e1e1e' : '#ffffff',
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: theme.colors.outlineVariant,
+                                elevation: 5,
+                                zIndex: 1000,
+                                overflow: 'hidden'
+                            }}>
+                                {materialTypes
+                                    .filter(t => t.TypeName.toLowerCase().includes(materialForm.name.toLowerCase()))
+                                    .map((type, index) => (
+                                        <Pressable 
+                                            key={type.ID}
+                                            onPress={() => {
+                                                setMaterialForm({ ...materialForm, name: type.TypeName, typeId: type.ID.toString() });
+                                                setIsTypeSuggestionsVisible(false);
+                                                setSelectedTypeIndex(-1);
+                                            }}
+                                            style={({ pressed }) => ({
+                                                padding: 12,
+                                                backgroundColor: index === selectedTypeIndex ? theme.colors.primaryContainer : (pressed ? theme.colors.surfaceVariant : 'transparent'),
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 10,
+                                                borderBottomWidth: 1,
+                                                borderBottomColor: theme.colors.surfaceVariant
+                                            })}
+                                        >
+                                            <Layers size={16} color={index === selectedTypeIndex ? theme.colors.primary : theme.colors.onSurfaceVariant} />
+                                            <Text style={{ 
+                                                color: index === selectedTypeIndex ? theme.colors.onPrimaryContainer : theme.colors.onSurface, 
+                                                fontSize: 15,
+                                                fontWeight: index === selectedTypeIndex ? '600' : '400'
+                                            }}>{type.TypeName}</Text>
+                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12, marginLeft: 'auto' }}>Category</Text>
+                                        </Pressable>
+                                    ))}
+                            </View>
+                        )}
+                    </View>
                     
                     <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
                         <View style={{ flex: 1 }}>

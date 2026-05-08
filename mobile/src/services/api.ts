@@ -142,6 +142,7 @@ export const userService = {
 
 export const inventoryService = {
     getMaterials: () => api.get('/inventory/materials'),
+    getMaterialTypes: () => api.get('/inventory/material-types'),
     createMaterial: (materialData: any) => api.post('/inventory/materials', materialData),
     deleteMaterial: (id: number) => api.delete(`/inventory/materials/${id}`),
     updateMaterialStock: (id: number, quantity: number) => api.put(`/inventory/materials/${id}`, { quantity }),

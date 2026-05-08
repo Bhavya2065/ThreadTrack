@@ -11,6 +11,7 @@ router.get('/materials', auth(), async (req, res) => {
         const result = await pool.request().query(`
             SELECT 
                 rm.*,
+                mt.TypeName,
                 COALESCE((
                     SELECT SUM((o.Quantity - COALESCE(prod.ProducedQty, 0)) * p.MaterialQuantityPerUnit)
                     FROM Orders o
@@ -25,6 +26,7 @@ router.get('/materials', auth(), async (req, res) => {
                     AND o.Status NOT IN ('Completed', 'Cancelled', 'Inquiry')
                 ), 0) as ReservedStock
             FROM RawMaterials rm
+            LEFT JOIN MaterialTypes mt ON rm.TypeID = mt.ID
         `);
         res.json(result.recordset);
     } catch (err) {
@@ -36,7 +38,7 @@ router.get('/materials', auth(), async (req, res) => {
 router.put('/materials/:id', auth(['Admin']), async (req, res) => {
     try {
         const { id } = req.params;
-        const { quantity, name, unit, minimumRequired } = req.body;
+        const { quantity, name, unit, minimumRequired, typeId } = req.body;
 
         const pool = await poolPromise;
         const result = await pool.request()
@@ -45,12 +47,14 @@ router.put('/materials/:id', auth(['Admin']), async (req, res) => {
             .input('name', sql.NVarChar, name)
             .input('unit', sql.NVarChar, unit)
             .input('min', sql.Float, minimumRequired)
+            .input('typeId', sql.Int, typeId || null)
             .query(`
                 UPDATE RawMaterials 
                 SET CurrentStock = COALESCE(@quantity, CurrentStock),
                     Name = COALESCE(@name, Name),
                     Unit = COALESCE(@unit, Unit),
                     MinimumRequired = COALESCE(@min, MinimumRequired),
+                    TypeID = COALESCE(@typeId, TypeID),
                     LastUpdated = GETUTCDATE() 
                 WHERE MaterialID = @id
             `);
@@ -80,15 +84,40 @@ router.put('/materials/:id', auth(['Admin']), async (req, res) => {
 });
 
 
+// Get all Material Types
+router.get('/material-types', auth(), async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query('SELECT * FROM MaterialTypes ORDER BY TypeName ASC');
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Create New Raw Material (Admin only)
 router.post('/materials', auth(['Admin']), async (req, res) => {
     try {
-        const { materialName, currentStock, unit, minimumRequired } = req.body;
+        const { materialName, currentStock, unit, minimumRequired, typeId } = req.body;
         if (!materialName || currentStock === undefined || !unit) {
             return res.status(400).json({ error: 'Material name, stock, and unit are required' });
         }
 
-        const newMaterialId = (await pool.request().query('SELECT @@IDENTITY AS id')).recordset[0].id;
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('name', sql.NVarChar, materialName)
+            .input('stock', sql.Float, currentStock)
+            .input('unit', sql.NVarChar, unit)
+            .input('min', sql.Float, minimumRequired || 0)
+            .input('typeId', sql.Int, typeId || null)
+            .query(`
+                INSERT INTO RawMaterials (Name, CurrentStock, Unit, MinimumRequired, TypeID) 
+                OUTPUT INSERTED.MaterialID
+                VALUES (@name, @stock, @unit, @min, @typeId)
+            `);
+
+        const newMaterialId = result.recordset[0].MaterialID;
 
         // Log material creation
         await logAction({
@@ -100,6 +129,7 @@ router.post('/materials', auth(['Admin']), async (req, res) => {
                 name: materialName,
                 initialStock: currentStock,
                 unit: unit,
+                typeId: typeId,
                 timestamp: new Date().toISOString()
             },
             ipAddress: req.ip

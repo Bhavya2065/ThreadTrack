@@ -26,12 +26,14 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   placeholder = "Select"
 }) => {
   const [visible, setVisible] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [layoutWidth, setLayoutWidth] = useState(0);
   const rotation = useRef(new Animated.Value(0)).current;
   const theme = useTheme();
 
   const openMenu = () => {
     setVisible(true);
+    setHighlightedIndex(-1);
     Animated.spring(rotation, {
       toValue: 1,
       useNativeDriver: true,
@@ -42,6 +44,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
   const closeMenu = () => {
     setVisible(false);
+    setHighlightedIndex(-1);
     Animated.spring(rotation, {
       toValue: 0,
       useNativeDriver: true,
@@ -90,6 +93,31 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         anchor={
           <Pressable 
             onPress={openMenu}
+            // @ts-ignore
+            onKeyDown={(e: any) => {
+              if (!visible) {
+                if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                  openMenu();
+                  e.preventDefault();
+                }
+                return;
+              }
+
+              if (e.key === 'ArrowDown') {
+                setHighlightedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev));
+                e.preventDefault();
+              } else if (e.key === 'ArrowUp') {
+                setHighlightedIndex(prev => (prev > 0 ? prev - 1 : prev));
+                e.preventDefault();
+              } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+                onSelect(options[highlightedIndex].value);
+                if (!multiSelect) closeMenu();
+                e.preventDefault();
+              } else if (e.key === 'Escape') {
+                closeMenu();
+                e.preventDefault();
+              }
+            }}
             style={({ pressed }) => [
               styles.anchor,
               { 
@@ -125,7 +153,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                             }}
                             style={({ pressed }) => [
                                 styles.itemPressable,
-                                active && !multiSelect && styles.selectedItem,
+                                (active && !multiSelect) || index === highlightedIndex ? styles.selectedItem : null,
                                 pressed && { backgroundColor: theme.colors.surfaceVariant }
                             ]}
                         >

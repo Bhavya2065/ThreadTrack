@@ -132,8 +132,8 @@ router.get('/production-summary', auth(['Admin', 'Super Admin']), async (req, re
                 (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -14, GETUTCDATE()) AND LogDate < DATEADD(day, -7, GETUTCDATE())) as lastWeekProduced,
                 (SELECT 
                     CASE 
-                        WHEN prev.total = 0 THEN 0
-                        ELSE CAST(ROUND(((curr.total - prev.total) / CAST(prev.total AS FLOAT)) * 100, 1) AS FLOAT)
+                        WHEN prev = 0 THEN 0
+                        ELSE CAST(ROUND(((curr - prev) / CAST(prev AS FLOAT)) * 100, 1) AS FLOAT)
                     END
                 FROM (
                     SELECT (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -7, GETUTCDATE())) as curr,
