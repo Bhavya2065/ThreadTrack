@@ -11,8 +11,10 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { Tokens } from '../../src/theme/tokens';
+import { useToast } from '../../src/context/ToastContext';
 
 export default function BuyerTracking() {
+    const { showToast } = useToast();
     const [orders, setOrders] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [materials, setMaterials] = useState<any[]>([]);
@@ -23,6 +25,10 @@ export default function BuyerTracking() {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [orderQuantities, setOrderQuantities] = useState<Record<number, string>>({});
     const [submitting, setSubmitting] = useState(false);
+    const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+    const [isConfirmCancelModalVisible, setIsConfirmCancelModalVisible] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+    const [cancelReason, setCancelReason] = useState('');
     const router = useRouter();
 
     const userInfo = getUserInfo();
@@ -76,7 +82,7 @@ export default function BuyerTracking() {
         }));
     };
 
-    const checkIfInquiryNeeded = () => {
+    const inquiryInfo = React.useMemo(() => {
         const itemsToOrder = Object.entries(orderQuantities)
             .filter(([_, qty]) => parseInt(qty) > 0)
             .map(([pId, qty]) => ({
@@ -96,12 +102,12 @@ export default function BuyerTracking() {
             const qtyPerUnit = parseFloat(product.MaterialQuantityPerUnit?.toString() || '1');
             
             const netStock = cStock - rStock;
-            const maxUnits = Math.floor(netStock / qtyPerUnit);
+            const maxUnits = Math.max(0, Math.floor(netStock / qtyPerUnit));
 
-            if (item.quantity > maxUnits) return true;
+            if (item.quantity > maxUnits) return { needed: true, amount: maxUnits };
         }
-        return false;
-    };
+        return { needed: false, amount: 0 };
+    }, [orderQuantities, products, materials]);
 
     const handleCreateOrder = async () => {
         const itemsToOrder = Object.entries(orderQuantities)
@@ -113,11 +119,15 @@ export default function BuyerTracking() {
 
         if (itemsToOrder.length === 0) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            alert('Please enter a quantity for at least one product.');
+            showToast({
+                title: 'No Items',
+                message: 'Please enter a quantity for at least one product.',
+                type: 'warning'
+            });
             return;
         }
 
-        const needsInquiry = checkIfInquiryNeeded();
+        const needsInquiry = inquiryInfo.needed;
         
         setSubmitting(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -132,7 +142,64 @@ export default function BuyerTracking() {
             fetchData();
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            alert(error.response?.data?.error || 'Failed to create order.');
+            showToast({
+                title: 'Order Failed',
+                message: error.response?.data?.error || 'Failed to create order.',
+                type: 'error'
+            });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+    
+    const handleCancelOrder = async () => {
+        if (!selectedOrderId) return;
+        if (!cancelReason.trim()) {
+            showToast({
+                title: 'Required',
+                message: 'Please provide a reason for cancellation.',
+                type: 'warning'
+            });
+            return;
+        }
+
+        // Check if progress is above 0
+        const order = orders.find(o => o.OrderID === selectedOrderId);
+        const progress = order ? (order.ProducedQuantity / order.Quantity) : 0;
+
+        if (progress > 0) {
+            // Show secondary confirmation modal
+            setIsConfirmCancelModalVisible(true);
+            return;
+        }
+
+        // If progress is 0, proceed immediately
+        await finalConfirmCancel();
+    };
+
+    const finalConfirmCancel = async () => {
+        if (!selectedOrderId) return;
+        
+        setSubmitting(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        try {
+            await orderService.cancelOrder(selectedOrderId, cancelReason);
+            showToast({
+                title: 'Order Cancelled',
+                message: 'Your order has been cancelled successfully.',
+                type: 'success'
+            });
+            setIsCancelModalVisible(false);
+            setIsConfirmCancelModalVisible(false);
+            setCancelReason('');
+            setSelectedOrderId(null);
+            fetchData();
+        } catch (error: any) {
+            showToast({
+                title: 'Error',
+                message: error.response?.data?.error || 'Failed to cancel order.',
+                type: 'error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -142,7 +209,9 @@ export default function BuyerTracking() {
         switch (status) {
             case 'Completed': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)' };
             case 'Cancelled': return { color: theme.colors.error, bg: theme.dark ? 'rgba(255, 59, 48, 0.15)' : 'rgba(255, 59, 48, 0.1)' };
-            case 'In Progress': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)' };
+            case 'Approved':
+            case 'Manufacturing':
+            case 'In Progress': return { color: theme.colors.primary, bg: theme.dark ? 'rgba(0, 150, 255, 0.1)' : 'rgba(0, 150, 255, 0.1)', label: 'In Progress' };
             case 'Inquiry': return { color: theme.colors.tertiary, bg: theme.dark ? 'rgba(0, 200, 255, 0.1)' : 'rgba(0, 200, 255, 0.1)' };
             default: return { color: theme.colors.onSurfaceVariant, bg: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' };
         }
@@ -201,9 +270,11 @@ export default function BuyerTracking() {
                 }
             >
                 <View style={styles.mainContent}>
-                    <View style={styles.headerRow}>
-                        <Text variant="titleLarge" style={styles.sectionTitle}>Active Shipments</Text>
-                    </View>
+                    {orders.length > 0 && (
+                        <View style={styles.headerRow}>
+                            <Text variant="titleLarge" style={styles.sectionTitle}>Active Shipments</Text>
+                        </View>
+                    )}
 
                     {orders.map((order, index) => (
                         <TransitionView key={order.OrderID} index={index}>
@@ -212,12 +283,12 @@ export default function BuyerTracking() {
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.orderTitle}>{order.ProductName}</Text>
                                     </View>
-                                    <View style={[styles.chip, { borderColor: getStatusStyle(order.Status).bg === getStatusStyle(order.Status).bg ? getStatusStyle(order.Status).bg : getStatusStyle(order.Status).color, backgroundColor: getStatusStyle(order.Status).bg, paddingHorizontal: 10, justifyContent: 'center' }]}>
-                                        <Text style={{ color: getStatusStyle(order.Status).color, fontSize: 10, fontWeight: 'normal' }}>{order.Status}</Text>
+                                    <View style={[styles.chip, { borderColor: getStatusStyle(order.Status).bg, backgroundColor: getStatusStyle(order.Status).bg, paddingHorizontal: 10, justifyContent: 'center' }]}>
+                                        <Text style={{ color: getStatusStyle(order.Status).color, fontSize: 10, fontWeight: 'normal' }}>{getStatusStyle(order.Status).label || order.Status}</Text>
                                     </View>
                                 </View>
 
-                                <Text style={styles.orderDetailText}>Placed on {new Date(order.OrderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</Text>
+                                <Text style={styles.orderDetailText}>Placed on {new Date(order.OrderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {new Date(order.OrderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
 
                                 <View style={styles.statusRow}>
                                     <View style={styles.statusItem}>
@@ -259,6 +330,25 @@ export default function BuyerTracking() {
                                                 return new Date(Date.now() + remainingMs).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                                             })()}
                                         </Text>
+                                    </View>
+                                )}
+
+                                {(order.Status !== 'Completed' && order.Status !== 'Cancelled') && (
+                                    <View style={{ marginTop: 15, flexDirection: 'row', justifyContent: 'flex-end' }}>
+                                        <Button 
+                                            mode="outlined" 
+                                            compact 
+                                            icon="close-circle"
+                                            textColor={theme.colors.error}
+                                            style={{ borderColor: theme.colors.error }}
+                                            onPress={() => {
+                                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                                setSelectedOrderId(order.OrderID);
+                                                setIsCancelModalVisible(true);
+                                            }}
+                                        >
+                                            Cancel Order
+                                        </Button>
                                     </View>
                                 )}
 
@@ -331,11 +421,11 @@ export default function BuyerTracking() {
                         )}
                     </ScrollView>
 
-                    {checkIfInquiryNeeded() && (
+                    {inquiryInfo.needed && (
                         <View style={{ marginTop: 10, padding: 10, backgroundColor: 'rgba(0, 150, 255, 0.1)', borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                             <AlertTriangle size={18} color={theme.colors.primary} />
                             <Text style={{ flex: 1, fontSize: 12, color: theme.colors.primary, fontWeight: '600' }}>
-                                Requested quantity exceeds current stock. This will be sent as a Bulk Inquiry.
+                                We have only {inquiryInfo.amount} quantity left, So these order may take some more time to deliever
                             </Text>
                         </View>
                     )}
@@ -349,7 +439,90 @@ export default function BuyerTracking() {
                             disabled={submitting}
                             labelStyle={{ fontWeight: 'normal' }}
                         >
-                            {checkIfInquiryNeeded() ? 'Send Bulk Inquiry' : 'Place Order'}
+                            {inquiryInfo.needed ? 'Send Bulk Inquiry' : 'Place Order'}
+                        </Button>
+                    </View>
+                </Modal>
+
+                <Modal
+                    visible={isCancelModalVisible}
+                    onDismiss={() => {
+                        setIsCancelModalVisible(false);
+                        setCancelReason('');
+                        setSelectedOrderId(null);
+                    }}
+                    contentContainerStyle={[styles.modalContent, styles.responsiveModal]}
+                >
+                    <Text variant="headlineSmall" style={[styles.sectionTitle, { marginBottom: 10 }]}>Cancel Order</Text>
+                    <Text style={{ marginBottom: 20, color: theme.colors.onSurfaceVariant }}>
+                        Please tell us why you want to cancel this order.
+                    </Text>
+                    
+                    <TextInput
+                        label="Cancellation Reason"
+                        value={cancelReason}
+                        onChangeText={setCancelReason}
+                        mode="outlined"
+                        multiline
+                        numberOfLines={3}
+                        style={{ backgroundColor: 'transparent', marginBottom: 20 }}
+                        placeholder="e.g., Change of plans, Ordered by mistake..."
+                    />
+
+                    <View style={styles.modalButtons}>
+                        <Button 
+                            onPress={() => {
+                                setIsCancelModalVisible(false);
+                                setCancelReason('');
+                                setSelectedOrderId(null);
+                            }} 
+                            disabled={submitting}
+                        >
+                            Wait, Keep It
+                        </Button>
+                        <Button
+                            mode="contained"
+                            onPress={handleCancelOrder}
+                            loading={submitting}
+                            disabled={submitting || !cancelReason.trim()}
+                            buttonColor={theme.colors.error}
+                        >
+                            Confirm Cancel
+                        </Button>
+                    </View>
+                </Modal>
+
+                <Modal
+                    visible={isConfirmCancelModalVisible}
+                    onDismiss={() => setIsConfirmCancelModalVisible(false)}
+                    contentContainerStyle={[styles.modalContent, styles.responsiveModal]}
+                >
+                    <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                        <AlertTriangle size={48} color={theme.colors.error} />
+                        <Text variant="headlineSmall" style={[styles.sectionTitle, { marginTop: 10, textAlign: 'center' }]}>Production Started!</Text>
+                    </View>
+                    
+                    <Text style={{ textAlign: 'center', marginBottom: 20, color: theme.colors.onSurfaceVariant, lineHeight: 22 }}>
+                        The factory has already started working on this order. Are you sure you want to cancel it now?
+                    </Text>
+
+                    <View style={styles.modalButtons}>
+                        <Button 
+                            onPress={() => setIsConfirmCancelModalVisible(false)} 
+                            disabled={submitting}
+                            textColor={theme.colors.onSurface}
+                        >
+                            No, Go Back
+                        </Button>
+                        <Button
+                            mode="contained"
+                            onPress={finalConfirmCancel}
+                            loading={submitting}
+                            disabled={submitting}
+                            buttonColor={theme.colors.error}
+                            labelStyle={{ fontWeight: 'bold' }}
+                        >
+                            Yes, Cancel it
                         </Button>
                     </View>
                 </Modal>

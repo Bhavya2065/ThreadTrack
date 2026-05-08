@@ -13,7 +13,7 @@ CREATE TABLE Users (
     UserID INT PRIMARY KEY IDENTITY(1,1),
     Username NVARCHAR(50) NOT NULL UNIQUE,
     PasswordHash NVARCHAR(255) NOT NULL,
-    Role NVARCHAR(20) NOT NULL CHECK (Role IN ('Admin', 'Worker', 'Buyer')),
+    Role NVARCHAR(20) NOT NULL CHECK (Role IN ('Admin', 'Worker', 'Buyer', 'Pending', 'Super Admin')),
     CreatedAt DATETIME DEFAULT GETDATE()
 );
 
@@ -45,7 +45,7 @@ CREATE TABLE Orders (
     BuyerID INT FOREIGN KEY REFERENCES Users(UserID),
     ProductID INT FOREIGN KEY REFERENCES Products(ProductID),
     Quantity INT NOT NULL,
-    Status NVARCHAR(20) DEFAULT 'Pending' CHECK (Status IN ('Pending', 'In Progress', 'Completed', 'Cancelled')),
+    Status NVARCHAR(20) DEFAULT 'Pending' CHECK (Status IN ('Pending', 'Approved', 'Manufacturing', 'In Progress', 'Completed', 'Cancelled', 'Inquiry')),
     OrderDate DATETIME DEFAULT GETDATE(),
     CompletionDate DATETIME,
     CompletionNotes NVARCHAR(MAX)
@@ -60,6 +60,19 @@ CREATE TABLE ProductionLogs (
     QuantityProduced INT NOT NULL,
     LogDate DATETIME DEFAULT GETDATE()
 );
+
+-- Audit Logs Table for tracking system-wide operations
+CREATE TABLE AuditLogs (
+    LogID INT PRIMARY KEY IDENTITY(1,1),
+    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+    Action NVARCHAR(100) NOT NULL, -- e.g., 'USER_LOGIN', 'CREATE_ORDER'
+    EntityName NVARCHAR(50),      -- e.g., 'Orders', 'Users'
+    EntityID INT,                 -- ID of the affected record
+    Details NVARCHAR(MAX),        -- JSON or descriptive summary of the action
+    IPAddress NVARCHAR(50),
+    CreatedAt DATETIME DEFAULT GETDATE()
+);
+GO
 GO
 
 -- Seed Initial Data

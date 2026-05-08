@@ -20,7 +20,7 @@ const auth = (roles = []) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             req.user = decoded;
 
-            if (roles.length && !roles.includes(decoded.role)) {
+            if (roles.length && !roles.includes(decoded.role) && decoded.role !== 'Super Admin') {
                 return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
             }
 

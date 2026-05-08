@@ -1,38 +1,43 @@
 import React, { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, Alert, Dimensions } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Text, TextInput, Button, useTheme, Divider } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { authService, setToken } from '../src/services/api';
 import { createStyles } from '../assets/Styles/LoginStyles';
 import { GlassCard } from '../src/components/v2/GlassCard';
+import { useToast } from '../src/context/ToastContext';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
   const theme = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
+  const { showToast } = useToast();
 
   const handleLogin = async () => {
     Haptics.selectionAsync();
     if (!username || !password) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('Error', 'Please enter both username and password.');
+      showToast({
+        title: 'Input Required',
+        message: 'Please enter both username and password.',
+        type: 'warning'
+      });
       return;
     }
 
-    if (username.length < 4) {
+    if (username.length < 3) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('Validation Error', 'Username must be at least 4 characters.');
-      return;
-    }
-
-    if (password.length < 6) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('Validation Error', 'Password must be at least 6 characters.');
+      showToast({
+        title: 'Validation Error',
+        message: 'Username must be at least 3 characters.',
+        type: 'warning'
+      });
       return;
     }
 
@@ -41,12 +46,29 @@ export default function LoginScreen() {
       const res = await authService.login(username, password);
       const { token, role, id, username: loggedUsername } = res.data;
       await setToken(token, { id, role, username: loggedUsername });
+      
+      showToast({
+        title: 'Success',
+        message: `Welcome back, ${loggedUsername}!`,
+        type: 'success'
+      });
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace(`/${role.toLowerCase()}` as any);
+      
+      // Handle routing based on role, mapping Super Admin to the admin portal
+      const targetRole = role.toLowerCase();
+      const route = (targetRole === 'super admin' || targetRole === 'admin') ? 'admin' : targetRole;
+      
+      router.replace(`/${route}` as any);
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const errorMsg = err.response?.data?.message || 'Invalid username or password.';
-      Alert.alert('Login Failed', errorMsg);
+      
+      showToast({
+        title: 'Login Failed',
+        message: errorMsg,
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -62,12 +84,22 @@ export default function LoginScreen() {
       const res = await authService.login(credentials.username, credentials.password);
       const { token, role: resRole, id, username: loggedUsername } = res.data;
       await setToken(token, { id, role: resRole, username: loggedUsername });
+      
+      showToast({
+        title: 'Developer Login',
+        message: `Authenticated as ${resRole}`,
+        type: 'success'
+      });
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace(`/${role}` as any);
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      const errorMsg = err.response?.data?.message || err.message || 'Unknown error';
-      Alert.alert('Simulation Failed', `Could not authenticate test user. Error: ${errorMsg}`);
+      showToast({
+        title: 'Simulation Error',
+        message: 'Could not log in as test user.',
+        type: 'error'
+      });
     }
   };
 
@@ -121,7 +153,6 @@ export default function LoginScreen() {
             Sign In
           </Button>
 
-          {/* New Registration Button */}
           <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', marginTop: 8 }}>
             <Text variant="labelSmall" style={styles.newAccountLabel}>New to ThreadTrack?</Text>
             <Button

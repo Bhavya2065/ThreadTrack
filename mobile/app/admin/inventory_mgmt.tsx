@@ -2,14 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Alert, Platform, useWindowDimensions, Pressable } from 'react-native';
 import { Text, Button, Portal, Modal, TextInput, MD3Colors, Appbar, IconButton, Chip, useTheme, RadioButton, Menu } from 'react-native-paper';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Plus, Trash2, Edit3, Package, Layers } from 'lucide-react-native';
+import { Plus, Trash2, Edit3, Package, Layers, Tag, Scale, AlertTriangle, Hash, Info } from 'lucide-react-native';
 import { inventoryService } from '../../src/services/api';
 import { createStyles } from '../../assets/Styles/InventoryMgmtStyles';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { EmptyState } from '../../src/components/EmptyState';
+import { useToast } from '../../src/context/ToastContext';
+import { CustomDropdown } from '../../src/components/v2/CustomDropdown';
 
 export default function InventoryManagement() {
+    const { showToast } = useToast();
     const router = useRouter();
     const theme = useTheme();
     const styles = createStyles(theme);
@@ -17,13 +20,16 @@ export default function InventoryManagement() {
     const [loading, setLoading] = useState(true);
     const [materials, setMaterials] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
+    const [materialTypes, setMaterialTypes] = useState<any[]>([]);
 
     const [isMaterialModalVisible, setIsMaterialModalVisible] = useState(false);
     const [isStockModalVisible, setIsStockModalVisible] = useState(false);
+    const [isTypeSuggestionsVisible, setIsTypeSuggestionsVisible] = useState(false);
+    const [selectedTypeIndex, setSelectedTypeIndex] = useState(-1);
     const [submitting, setSubmitting] = useState(false);
 
     const { refillMaterialId, refillAmount } = useLocalSearchParams();
-    const [materialForm, setMaterialForm] = useState({ name: '', stock: '', unit: '', min: '' });
+    const [materialForm, setMaterialForm] = useState({ name: '', stock: '', unit: '', min: '', typeId: '' });
     const [stockForm, setStockForm] = useState({ id: null as number | null, name: '', amount: '' });
 
     useEffect(() => {
@@ -37,6 +43,8 @@ export default function InventoryManagement() {
                     amount: refillAmount as string
                 });
                 setIsStockModalVisible(true);
+                // Clear params after opening so it doesn't re-trigger on material updates
+                router.setParams({ refillMaterialId: undefined, refillAmount: undefined });
             }
         }
     }, [refillMaterialId, refillAmount, materials]);
@@ -54,14 +62,20 @@ export default function InventoryManagement() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [mRes, pRes] = await Promise.all([
+            const [mRes, pRes, tRes] = await Promise.all([
                 inventoryService.getMaterials(),
-                inventoryService.getProducts()
+                inventoryService.getProducts(),
+                inventoryService.getMaterialTypes()
             ]);
             setMaterials(mRes.data);
             setProducts(pRes.data);
+            setMaterialTypes(tRes.data);
         } catch (error) {
-            Alert.alert('Error', 'Failed to fetch inventory data.');
+            showToast({
+                title: 'Data Error',
+                message: 'Failed to fetch inventory data.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -69,7 +83,11 @@ export default function InventoryManagement() {
 
     const handleCreateMaterial = async () => {
         if (!materialForm.name || !materialForm.stock || !materialForm.unit) {
-            Alert.alert('Error', 'All fields are required.');
+            showToast({
+                title: 'Required Fields',
+                message: 'All fields are required.',
+                type: 'warning'
+            });
             return;
         }
         setSubmitting(true);
@@ -78,13 +96,23 @@ export default function InventoryManagement() {
                 materialName: materialForm.name,
                 currentStock: parseFloat(materialForm.stock),
                 unit: materialForm.unit,
-                minimumRequired: parseFloat(materialForm.min || '0')
+                minimumRequired: parseFloat(materialForm.min || '0'),
+                typeId: materialForm.typeId ? parseInt(materialForm.typeId) : null
             });
             setIsMaterialModalVisible(false);
-            setMaterialForm({ name: '', stock: '', unit: '', min: '' });
+            setMaterialForm({ name: '', stock: '', unit: '', min: '', typeId: '' });
             fetchData();
+            showToast({
+                title: 'Material Created',
+                message: 'Successfully added new raw material.',
+                type: 'success'
+            });
         } catch (error) {
-            Alert.alert('Error', 'Failed to create material.');
+            showToast({
+                title: 'Failed',
+                message: 'Failed to create material.',
+                type: 'error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -92,7 +120,11 @@ export default function InventoryManagement() {
 
     const handleAddStock = async () => {
         if (!stockForm.id || !stockForm.amount) {
-            Alert.alert('Error', 'Quantity is required.');
+            showToast({
+                title: 'Missing Info',
+                message: 'Quantity is required.',
+                type: 'warning'
+            });
             return;
         }
         setSubmitting(true);
@@ -101,8 +133,17 @@ export default function InventoryManagement() {
             setIsStockModalVisible(false);
             setStockForm({ id: null, name: '', amount: '' });
             fetchData();
+            showToast({
+                title: 'Stock Updated',
+                message: 'Successfully updated material availability.',
+                type: 'success'
+            });
         } catch (error) {
-            Alert.alert('Error', 'Failed to update stock.');
+            showToast({
+                title: 'Update Failed',
+                message: 'Failed to update stock.',
+                type: 'error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -113,8 +154,17 @@ export default function InventoryManagement() {
             try {
                 await inventoryService.deleteMaterial(id);
                 fetchData();
+                showToast({
+                    title: 'Deleted',
+                    message: 'Material removed from inventory.',
+                    type: 'success'
+                });
             } catch (error: any) {
-                Alert.alert('Error', error.response?.data?.error || 'Failed to delete material.');
+                showToast({
+                    title: 'Error',
+                    message: error.response?.data?.error || 'Failed to delete material.',
+                    type: 'error'
+                });
             }
         };
 
@@ -136,8 +186,17 @@ export default function InventoryManagement() {
             try {
                 await inventoryService.deleteProduct(id);
                 fetchData();
+                showToast({
+                    title: 'Deleted',
+                    message: 'Product removed from catalog.',
+                    type: 'success'
+                });
             } catch (error) {
-                Alert.alert('Error', 'Failed to delete product.');
+                showToast({
+                    title: 'Error',
+                    message: 'Failed to delete product.',
+                    type: 'error'
+                });
             }
         };
 
@@ -210,9 +269,9 @@ export default function InventoryManagement() {
                                                 <Text style={styles.chipText}>{m.CurrentStock <= m.MinStockThreshold ? 'Low' : 'Decent'}</Text>
                                             </View>
                                         </View>
-                                        <View style={styles.metaRow}>
-                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>In Stock: {m.CurrentStock.toFixed(2)} {m.Unit}</Text>
-                                        </View>
+                                         <View style={styles.metaRow}>
+                                             <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>{m.TypeName || 'General'} • In Stock: {m.CurrentStock.toFixed(2)} {m.Unit}</Text>
+                                         </View>
                                         <Text style={{ color: theme.colors.error, fontSize: 13, marginTop: 4 }}>Reserve: {m.ReservedStock.toFixed(2)}</Text>
                                     </View>
                                     <View style={styles.actionRow}>
@@ -302,11 +361,21 @@ export default function InventoryManagement() {
 
             {/* Add Stock Modal */}
             <Portal>
-                <Modal visible={isStockModalVisible} onDismiss={() => setIsStockModalVisible(false)} contentContainerStyle={styles.modal}>
-                    <Text variant="headlineSmall" style={styles.modalTitle}>Refill Stock</Text>
-                    <Text style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}>Adding to: {stockForm.name}</Text>
+                <Modal visible={isStockModalVisible} onDismiss={() => setIsStockModalVisible(false)} contentContainerStyle={[styles.modal, styles.responsiveModal]}>
+                    <View style={{ marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.surfaceVariant }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <View style={{ padding: 10, backgroundColor: theme.colors.primaryContainer, borderRadius: 12 }}>
+                                <Scale size={24} color={theme.colors.primary} />
+                            </View>
+                            <View>
+                                <Text variant="titleLarge" style={[styles.modalTitle, { marginBottom: 2, fontSize: 22 }]}>Refill Stock</Text>
+                                <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 14 }}>Adding to: <Text style={{ fontWeight: '600', color: theme.colors.onSurface }}>{stockForm.name}</Text></Text>
+                            </View>
+                        </View>
+                    </View>
+
                     <TextInput
-                        label="Quantity"
+                        label="Quantity to Add"
                         value={stockForm.amount}
                         onChangeText={t => setStockForm({ ...stockForm, amount: t })}
                         keyboardType="numeric"
@@ -315,24 +384,173 @@ export default function InventoryManagement() {
                         outlineColor={theme.colors.outline}
                         activeOutlineColor={theme.colors.primary}
                         textColor={theme.colors.onSurface}
+                        left={<TextInput.Icon icon={() => <Plus size={20} color={theme.colors.onSurfaceVariant} />} />}
+                        outlineStyle={{ borderRadius: 12 }}
                     />
-                    <View style={styles.modalButtons}>
-                        <Button mode="outlined" onPress={() => setIsStockModalVisible(false)} textColor={theme.colors.error} style={{ borderColor: theme.colors.error }} labelStyle={{ fontWeight: '500' }}>Cancel</Button>
-                        <Button mode="contained" onPress={handleAddStock} loading={submitting} labelStyle={{ fontWeight: '500' }}>Confirm Update</Button>
+                    
+                    <View style={[styles.modalButtons, { marginTop: 16 }]}>
+                        <Button mode="text" onPress={() => setIsStockModalVisible(false)} textColor={theme.colors.onSurfaceVariant} labelStyle={{ fontWeight: '600' }}>Cancel</Button>
+                        <Button mode="contained" onPress={handleAddStock} loading={submitting} labelStyle={{ fontWeight: '600' }} style={{ borderRadius: 8, paddingHorizontal: 8 }}>Confirm Refill</Button>
                     </View>
                 </Modal>
             </Portal>
 
             <Portal>
-                <Modal visible={isMaterialModalVisible} onDismiss={() => setIsMaterialModalVisible(false)} contentContainerStyle={styles.modal}>
-                    <Text variant="headlineSmall" style={styles.modalTitle}>New Material</Text>
-                    <TextInput label="Name" value={materialForm.name} onChangeText={t => setMaterialForm({ ...materialForm, name: t })} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Initial Stock" value={materialForm.stock} onChangeText={t => setMaterialForm({ ...materialForm, stock: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Unit (e.g. Metric Tons)" value={materialForm.unit} onChangeText={t => setMaterialForm({ ...materialForm, unit: t })} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Alert Threshold" value={materialForm.min} onChangeText={t => setMaterialForm({ ...materialForm, min: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <View style={styles.modalButtons}>
-                        <Button mode="outlined" onPress={() => setIsMaterialModalVisible(false)} textColor={theme.colors.error} style={{ borderColor: theme.colors.error }} labelStyle={{ fontWeight: '500' }}>Cancel</Button>
-                        <Button mode="contained" onPress={handleCreateMaterial} loading={submitting} labelStyle={{ fontWeight: '500' }}>Create</Button>
+                <Modal visible={isMaterialModalVisible} onDismiss={() => setIsMaterialModalVisible(false)} contentContainerStyle={[styles.modal, styles.responsiveModal]}>
+                    <View style={{ marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.surfaceVariant }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <View style={{ padding: 10, backgroundColor: theme.colors.primaryContainer, borderRadius: 12 }}>
+                                <Package size={24} color={theme.colors.primary} />
+                            </View>
+                            <View>
+                                <Text variant="titleLarge" style={[styles.modalTitle, { marginBottom: 2, fontSize: 22 }]}>Add New Raw Material</Text>
+                                <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 14 }}>Register a new raw material to your inventory</Text>
+                            </View>
+                        </View>
+                    </View>
+                    
+                    <View style={{ zIndex: 100 }}>
+                        <TextInput 
+                            label="Material Name" 
+                            value={materialForm.name} 
+                            onChangeText={t => {
+                                setMaterialForm({ ...materialForm, name: t });
+                                setIsTypeSuggestionsVisible(t.length > 0);
+                                setSelectedTypeIndex(-1);
+                            }} 
+                            onFocus={() => materialForm.name.length > 0 && setIsTypeSuggestionsVisible(true)}
+                            mode="outlined" 
+                            style={styles.input} 
+                            outlineColor={theme.colors.outline} 
+                            activeOutlineColor={theme.colors.primary} 
+                            textColor={theme.colors.onSurface}
+                            left={<TextInput.Icon icon={() => <Tag size={20} color={theme.colors.onSurfaceVariant} />} />}
+                            right={materialForm.name.length > 0 ? <TextInput.Icon icon="close" onPress={() => { setMaterialForm({ ...materialForm, name: '', typeId: '' }); setIsTypeSuggestionsVisible(false); setSelectedTypeIndex(-1); }} /> : null}
+                            outlineStyle={{ borderRadius: 12 }}
+                            // @ts-ignore - onKeyPress works on web
+                            onKeyPress={(e: any) => {
+                                if (!isTypeSuggestionsVisible) return;
+                                
+                                const filtered = materialTypes.filter(t => t.TypeName.toLowerCase().includes(materialForm.name.toLowerCase()));
+                                
+                                if (e.nativeEvent.key === 'ArrowDown') {
+                                    setSelectedTypeIndex(prev => (prev < filtered.length - 1 ? prev + 1 : prev));
+                                } else if (e.nativeEvent.key === 'ArrowUp') {
+                                    setSelectedTypeIndex(prev => (prev > 0 ? prev - 1 : prev));
+                                } else if (e.nativeEvent.key === 'Enter' && selectedTypeIndex >= 0) {
+                                    const selected = filtered[selectedTypeIndex];
+                                    setMaterialForm({ ...materialForm, name: selected.TypeName, typeId: selected.ID.toString() });
+                                    setIsTypeSuggestionsVisible(false);
+                                    setSelectedTypeIndex(-1);
+                                    e.preventDefault();
+                                }
+                            }}
+                        />
+
+                        {isTypeSuggestionsVisible && (
+                            <View style={{
+                                position: 'absolute',
+                                top: 56,
+                                left: 0,
+                                right: 0,
+                                backgroundColor: theme.dark ? '#1e1e1e' : '#ffffff',
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: theme.colors.outlineVariant,
+                                elevation: 5,
+                                zIndex: 1000,
+                                overflow: 'hidden'
+                            }}>
+                                {materialTypes
+                                    .filter(t => t.TypeName.toLowerCase().includes(materialForm.name.toLowerCase()))
+                                    .map((type, index) => (
+                                        <Pressable 
+                                            key={type.ID}
+                                            onPress={() => {
+                                                setMaterialForm({ ...materialForm, name: type.TypeName, typeId: type.ID.toString() });
+                                                setIsTypeSuggestionsVisible(false);
+                                                setSelectedTypeIndex(-1);
+                                            }}
+                                            style={({ pressed }) => ({
+                                                padding: 12,
+                                                backgroundColor: index === selectedTypeIndex ? theme.colors.primaryContainer : (pressed ? theme.colors.surfaceVariant : 'transparent'),
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 10,
+                                                borderBottomWidth: 1,
+                                                borderBottomColor: theme.colors.surfaceVariant
+                                            })}
+                                        >
+                                            <Layers size={16} color={index === selectedTypeIndex ? theme.colors.primary : theme.colors.onSurfaceVariant} />
+                                            <Text style={{ 
+                                                color: index === selectedTypeIndex ? theme.colors.onPrimaryContainer : theme.colors.onSurface, 
+                                                fontSize: 15,
+                                                fontWeight: index === selectedTypeIndex ? '600' : '400'
+                                            }}>{type.TypeName}</Text>
+                                            <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12, marginLeft: 'auto' }}>Category</Text>
+                                        </Pressable>
+                                    ))}
+                            </View>
+                        )}
+                    </View>
+                    
+                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                        <View style={{ flex: 1 }}>
+                            <TextInput 
+                                label="Initial Stock" 
+                                value={materialForm.stock} 
+                                onChangeText={t => setMaterialForm({ ...materialForm, stock: t })} 
+                                keyboardType="numeric" 
+                                mode="outlined" 
+                                style={[styles.input, { marginBottom: 0 }]} 
+                                outlineColor={theme.colors.outline} 
+                                activeOutlineColor={theme.colors.primary} 
+                                textColor={theme.colors.onSurface} 
+                                left={<TextInput.Icon icon={() => <Hash size={20} color={theme.colors.onSurfaceVariant} />} />}
+                                outlineStyle={{ borderRadius: 12 }}
+                            />
+                        </View>
+                        <View style={{ flex: 1, marginTop: 6 }}>
+                            <CustomDropdown
+                                value={materialForm.unit}
+                                onSelect={(val) => setMaterialForm({ ...materialForm, unit: val })}
+                                options={[
+                                    { label: 'Metric Tons', value: 'Metric Tons' },
+                                    { label: 'Kg', value: 'Kg' },
+                                    { label: 'Meters', value: 'Meters' },
+                                    { label: 'Rolls', value: 'Rolls' },
+                                    { label: 'Units', value: 'Units' },
+                                    { label: 'Liters', value: 'Liters' },
+                                ]}
+                                placeholder="Select Unit"
+                            />
+                        </View>
+                    </View>
+                    
+                    <TextInput 
+                        label="Alert Threshold" 
+                        value={materialForm.min} 
+                        onChangeText={t => setMaterialForm({ ...materialForm, min: t })} 
+                        keyboardType="numeric" 
+                        mode="outlined" 
+                        style={styles.input} 
+                        outlineColor={theme.colors.outline} 
+                        activeOutlineColor={theme.colors.primary} 
+                        textColor={theme.colors.onSurface} 
+                        left={<TextInput.Icon icon={() => <AlertTriangle size={20} color={theme.colors.onSurfaceVariant} />} />}
+                        outlineStyle={{ borderRadius: 12 }}
+                    />
+                    
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceVariant, padding: 12, borderRadius: 12, marginBottom: 24, marginTop: 8 }}>
+                        <Info size={18} color={theme.colors.onSurfaceVariant} style={{ marginRight: 8 }} />
+                        <Text style={{ flex: 1, fontSize: 13, color: theme.colors.onSurfaceVariant, lineHeight: 18 }}>
+                            When stock falls below the alert threshold, you'll be notified to restock.
+                        </Text>
+                    </View>
+                    
+                    <View style={[styles.modalButtons, { marginTop: 0 }]}>
+                        <Button mode="text" onPress={() => setIsMaterialModalVisible(false)} textColor={theme.colors.onSurfaceVariant} labelStyle={{ fontWeight: '600' }}>Cancel</Button>
+                        <Button mode="contained" onPress={handleCreateMaterial} loading={submitting} labelStyle={{ fontWeight: '600' }} style={{ borderRadius: 8, paddingHorizontal: 8 }}>Create Material</Button>
                     </View>
                 </Modal>
             </Portal>

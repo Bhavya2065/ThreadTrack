@@ -55,7 +55,7 @@ async function runMigrations() {
             
             IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Orders_Status')
             BEGIN
-                ALTER TABLE Orders ADD CONSTRAINT CK_Orders_Status CHECK (Status IN ('Inquiry', 'Pending', 'In Progress', 'Completed', 'Cancelled'))
+                ALTER TABLE Orders ADD CONSTRAINT CK_Orders_Status CHECK (Status IN ('Inquiry', 'Pending', 'Approved', 'Manufacturing', 'In Progress', 'Completed', 'Cancelled'))
             END
         `);
 
@@ -97,6 +97,82 @@ async function runMigrations() {
                     WHERE pm.ProductID = Products.ProductID 
                     AND pm.MaterialID = Products.BaseMaterialID
                 );
+            END
+        `);
+
+        // 5. Create AuditLogs table
+        console.log('Creating AuditLogs table...');
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID('AuditLogs') AND type = 'U')
+            BEGIN
+                CREATE TABLE AuditLogs (
+                    LogID INT PRIMARY KEY IDENTITY(1,1),
+                    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+                    Action NVARCHAR(100) NOT NULL,
+                    EntityName NVARCHAR(50),
+                    EntityID INT,
+                    Details NVARCHAR(MAX),
+                    IPAddress NVARCHAR(50),
+                    CreatedAt DATETIME DEFAULT GETUTCDATE()
+                );
+            END
+        `);
+
+        // 6. Create Roles table and Update Users table
+        console.log('Setting up Roles...');
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID('Roles') AND type = 'U')
+            BEGIN
+                CREATE TABLE Roles (
+                    RoleID INT PRIMARY KEY IDENTITY(1,1),
+                    RoleName NVARCHAR(50) NOT NULL UNIQUE,
+                    IsPublic BIT DEFAULT 1
+                );
+            END
+        `);
+
+        // Check if roles are already seeded
+        const roleCount = await pool.request().query("SELECT COUNT(*) as count FROM Roles");
+        if (roleCount.recordset[0].count === 0) {
+            await pool.request().query(`
+                INSERT INTO Roles (RoleName, IsPublic) VALUES 
+                ('Super Admin', 0),
+                ('Admin', 1),
+                ('Worker', 1),
+                ('Buyer', 1);
+            `);
+        }
+
+        console.log('Verifying Users columns...');
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'Status')
+            BEGIN
+                ALTER TABLE Users ADD Status NVARCHAR(20) DEFAULT 'Pending';
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'RequestedRole')
+            BEGIN
+                ALTER TABLE Users ADD RequestedRole NVARCHAR(50);
+            END
+        `);
+
+        console.log('Ensuring existing users are approved...');
+        await pool.request().query("UPDATE Users SET Status = 'Approved' WHERE Status IS NULL");
+
+        console.log('Updating Users Role constraint...');
+        await pool.request().query(`
+            DECLARE @ConstraintName nvarchar(200)
+            SELECT @ConstraintName = name FROM sys.check_constraints 
+            WHERE parent_object_id = OBJECT_ID('Users') AND definition LIKE '%Role%'
+            
+            IF @ConstraintName IS NOT NULL
+            BEGIN
+                EXEC('ALTER TABLE Users DROP CONSTRAINT ' + @ConstraintName)
+            END
+            
+            IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Users_Role')
+            BEGIN
+                ALTER TABLE Users ADD CONSTRAINT CK_Users_Role CHECK (Role IN ('Admin', 'Worker', 'Buyer', 'Pending', 'Super Admin'))
             END
         `);
 

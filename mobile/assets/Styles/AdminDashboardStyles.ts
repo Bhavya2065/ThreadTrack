@@ -39,28 +39,81 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     kpiCard: {
-        width: Platform.OS === 'web' ? '23.5%' : '48%',
+        width: Platform.OS === 'web' ? '24%' : '100%',
         marginBottom: Tokens.spacing.md,
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    kpiTopBar: {
+        height: 4,
+        width: '100%',
     },
     kpiCardInner: {
-        padding: Tokens.spacing.md,
+        padding: 20,
         alignItems: 'flex-start',
     },
+    kpiHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: 16,
+    },
+    kpiIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    kpiTrendBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    kpiTrendText: {
+        fontSize: 12,
+        fontWeight: '700',
+    },
     kpiValue: {
-        fontSize: 24,
-        fontWeight: 'normal',
+        fontSize: 32,
+        fontWeight: 'bold',
         color: theme.colors.onSurface,
-        marginVertical: 4,
-        ...Platform.select({
-            web: {
-                textShadow: theme.dark ? `0 0 10px ${theme.colors.primary}50` : 'none',
-            }
-        }),
+        marginBottom: 2,
     },
     kpiLabel: {
+        fontSize: 14,
+        color: theme.colors.onSurfaceVariant,
+        fontWeight: '600',
+        marginBottom: 16,
+    },
+    kpiDivider: {
+        height: 1,
+        width: '100%',
+        backgroundColor: theme.colors.outlineVariant,
+        opacity: 0.5,
+        marginBottom: 12,
+    },
+    kpiFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+    },
+    kpiFooterText: {
         fontSize: 12,
         color: theme.colors.onSurfaceVariant,
-        fontWeight: 'normal',
+        flex: 1,
+    },
+    miniChartContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: 2,
+        height: 20,
+    },
+    miniChartBar: {
+        width: 3,
+        borderRadius: 1,
     },
     sectionTitle: {
         fontWeight: 'normal',

@@ -1,22 +1,22 @@
 export const Tokens = {
     colors: {
-        // Core Branding Professional
-        primary: '#0061FF',       // Trust Blue
-        secondary: '#697077',     // Neutral Slate
-        accent: '#15AD66',        // Success Green
+        // Modern Sapphire Branding
+        primary: '#2563EB',       // Vibrant Sapphire Blue
+        secondary: '#6366F1',     // Indigo Accent
+        accent: '#10B981',        // Emerald Success
 
         // Semantic
-        success: '#15AD66',
+        success: '#10B981',
         warning: '#F59E0B',
         error: '#EF4444',
         info: '#3B82F6',
 
-        // Theme-Specific (Refined)
-        background: '#F8FAFC',
+        // Theme-Specific
+        background: '#F1F5F9',
         surface: '#FFFFFF',
         glass: '#FFFFFF',
         glassBorder: '#E2E8F0',
-        textPrimary: '#0F172A',
+        textPrimary: '#1E293B',
         textSecondary: '#475569',
         textMuted: '#94A3B8',
         divider: '#E2E8F0',
@@ -66,28 +66,28 @@ export const Tokens = {
 };
 
 export const LightThemeColors = {
-    background: '#F8FAFC',      // Clean Light Slate Background
-    surface: '#FFFFFF',         // Pure White Cards
-    surfaceVariant: '#F1F5F9',  // Subtle Gray for Hover/Secondary
-    onSurface: '#0F172A',       // High Contrast Dark Slate Text
-    onSurfaceVariant: '#475569',// Medium Gray for Labels
-    outline: '#E2E8F0',         // Crisp Borders
-    glass: '#FFFFFF',           // Removing transparent glass, using solid white
-    glassBorder: '#E2E8F0',     // Solid subtle border
+    background: '#F1F5F9',      // Soft Slate Gray for contrast
+    surface: '#FFFFFF',         // Card surface
+    surfaceVariant: '#F8FAFC',  // Subtle backgrounds
+    onSurface: '#0F172A',       // Primary text
+    onSurfaceVariant: '#475569',// Secondary text
+    outline: '#E2E8F0',         // Borders
+    glass: '#FFFFFF',
+    glassBorder: '#E2E8F0',
     textPrimary: '#0F172A',
     textSecondary: '#475569',
     textMuted: '#94A3B8',
 };
 
 export const DarkThemeColors = {
-    background: '#0F172A',      // Deep Navy Dark Background
-    surface: '#1E293B',         // Solid Slate Dark Cards
-    surfaceVariant: '#334155',  // Medium Slate for Action Areas
-    onSurface: '#F8FAFC',       // High Contrast White Text
-    onSurfaceVariant: '#94A3B8',// Soft Gray for Labels
-    outline: '#334155',         // Clean Dark Borders
-    glass: '#1E293B',           // Solid Dark Slate
-    glassBorder: '#334155',     // Solid Dark Border
+    background: '#0F172A',      // Midnight Navy
+    surface: '#1E293B',         // Slate Dark surface
+    surfaceVariant: '#334155',  // Action areas
+    onSurface: '#F8FAFC',       // High contrast white
+    onSurfaceVariant: '#94A3B8',// Secondary text gray
+    outline: '#334155',         // Dark borders
+    glass: '#1E293B',
+    glassBorder: '#334155',
     textPrimary: '#F8FAFC',
     textSecondary: '#94A3B8',
     textMuted: '#64748B',

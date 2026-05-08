@@ -12,15 +12,46 @@ import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { Tokens } from '../../src/theme/tokens';
 
-const KPICard = ({ icon: Icon, label, value, color, index }: any) => {
+const MiniChart = ({ color }: { color: string }) => {
+    const theme = useTheme();
+    const styles = createStyles(theme);
+    const bars = [12, 18, 14, 22, 16];
+    return (
+        <View style={styles.miniChartContainer}>
+            {bars.map((h, i) => (
+                <View key={i} style={[styles.miniChartBar, { height: h, backgroundColor: color, opacity: 0.4 + (i * 0.12) }]} />
+            ))}
+        </View>
+    );
+};
+
+const KPICard = ({ icon: Icon, label, value, color, index, trend, footer }: any) => {
     const theme = useTheme();
     const styles = createStyles(theme);
     return (
         <TransitionView index={index} type="scale" style={styles.kpiCard}>
+            <View style={[styles.kpiTopBar, { backgroundColor: color }]} />
             <GlassCard style={styles.kpiCardInner}>
-                <Icon size={20} color={color} />
+                <View style={styles.kpiHeader}>
+                    <View style={[styles.kpiIconContainer, { backgroundColor: theme.dark ? color + '20' : color + '10' }]}>
+                        <Icon size={24} color={color} />
+                    </View>
+                    {trend && (
+                        <View style={[styles.kpiTrendBadge, { backgroundColor: theme.colors.primaryContainer + '40' }]}>
+                            <Text style={[styles.kpiTrendText, { color: theme.colors.primary }]}>{trend}</Text>
+                        </View>
+                    )}
+                </View>
+
                 <Text style={styles.kpiValue}>{value}</Text>
                 <Text style={styles.kpiLabel}>{label}</Text>
+
+                <View style={styles.kpiDivider} />
+
+                <View style={styles.kpiFooter}>
+                    <Text style={styles.kpiFooterText} numberOfLines={2}>{footer}</Text>
+                    <MiniChart color={color} />
+                </View>
             </GlassCard>
         </TransitionView>
     );
@@ -130,10 +161,42 @@ export default function AdminAnalytics() {
                 <View style={styles.mainContent}>
                     {/* KPI Section */}
                     <View style={styles.kpiRow}>
-                        <KPICard index={0} icon={Package} label="Orders" value="156" color={theme.colors.primary} />
-                        <KPICard index={1} icon={Zap} label="Efficiency" value="89%" color={theme.colors.secondary} />
-                        <KPICard index={2} icon={Activity} label="Growth" value="+12%" color={theme.colors.tertiary} />
-                        <KPICard index={3} icon={AlertCircle} label="Alerts" value="3" color={Tokens.colors.warning} />
+                        <KPICard 
+                            index={0} 
+                            icon={Package} 
+                            label="Active orders" 
+                            value={analytics?.stats?.activeOrders?.toString() || "0"} 
+                            color="#2196F3" 
+                            trend={`${analytics?.stats?.activeOrdersTrend > 0 ? '+' : ''}${analytics?.stats?.activeOrdersTrend || 0}%`}
+                            footer={`${analytics?.stats?.completedToday || 0} completed today`}
+                        />
+                        <KPICard 
+                            index={1} 
+                            icon={Zap} 
+                            label="Efficiency rate" 
+                            value={`${analytics?.stats?.efficiency || 0}%`} 
+                            color="#4CAF50" 
+                            trend="+0.0%"
+                            footer={`Target: ${analytics?.stats?.targetEfficiency || 90}%`}
+                        />
+                        <KPICard 
+                            index={2} 
+                            icon={TrendingUp} 
+                            label="Units produced" 
+                            value={analytics?.stats?.totalProduced?.toLocaleString() || "0"} 
+                            color="#FF9800" 
+                            trend={`${analytics?.stats?.productionTrend > 0 ? '+' : ''}${analytics?.stats?.productionTrend || 0}%`}
+                            footer={`vs ${analytics?.stats?.lastWeekProduced || 0} last week`}
+                        />
+                        <KPICard 
+                            index={3} 
+                            icon={AlertCircle} 
+                            label="Critical alerts" 
+                            value={analytics?.stats?.alerts?.toString() || "0"} 
+                            color="#F44336" 
+                            trend={analytics?.stats?.alerts > 0 ? `${analytics?.stats?.alerts} items` : null}
+                            footer={`${analytics?.stats?.lowStockCount || 0} low-stock warnings`}
+                        />
                     </View>
 
                     {/* Analytics Section */}
@@ -211,7 +274,9 @@ export default function AdminAnalytics() {
                             </View>
                         ) : (
                             <GlassCard style={styles.analyticsWrapper}>
-                                <Text variant="bodySmall" style={{ textAlign: 'center', color: theme.colors.onSurfaceVariant }}>Predicting requirements...</Text>
+                                <Text variant="bodySmall" style={{ textAlign: 'center', color: theme.colors.onSurfaceVariant }}>
+                                    {predictions.length === 0 ? "No raw materials found in inventory" : "Predicting requirements..."}
+                                </Text>
                             </GlassCard>
                         )}
                     </TransitionView>

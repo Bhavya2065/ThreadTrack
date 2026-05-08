@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { useTheme, Text, TouchableRipple, IconButton, Tooltip } from 'react-native-paper';
-import { TrendingUp, Package, ShoppingBag, History, Settings, LogOut, AlignLeft, Menu } from 'lucide-react-native';
+import { TrendingUp, Package, ShoppingBag, History, Settings, LogOut, AlignLeft, Menu, Users } from 'lucide-react-native';
 import { setToken } from '../../src/services/api';
 import { Tokens } from '../../src/theme/tokens';
 
@@ -27,6 +27,7 @@ export default function AdminLayout() {
         { name: 'index', label: 'Dashboard', icon: TrendingUp, path: '/admin' },
         { name: 'inventory', label: 'Inventory', icon: Package, path: '/admin/inventory' },
         { name: 'orders', label: 'Production', icon: ShoppingBag, path: '/admin/orders' },
+        { name: 'users', label: 'User Access', icon: Users, path: '/admin/users' },
         { name: 'recent', label: 'History', icon: History, path: '/admin/recent' },
         { name: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
     ];
@@ -150,6 +151,7 @@ export default function AdminLayout() {
                         <Tabs.Screen name="index" />
                         <Tabs.Screen name="inventory" />
                         <Tabs.Screen name="orders" />
+                        <Tabs.Screen name="users" />
                         <Tabs.Screen name="recent" />
                         <Tabs.Screen name="settings" />
                         <Tabs.Screen name="inventory_mgmt" />
@@ -184,6 +186,7 @@ export default function AdminLayout() {
             <Tabs.Screen name="index" options={{ title: 'Insights', tabBarIcon: ({ color }) => <TrendingUp size={24} color={color} /> }} />
             <Tabs.Screen name="inventory" options={{ title: 'Stock', tabBarIcon: ({ color }) => <Package size={24} color={color} /> }} />
             <Tabs.Screen name="orders" options={{ title: 'Orders', tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} /> }} />
+            <Tabs.Screen name="users" options={{ title: 'Users', tabBarIcon: ({ color }) => <Users size={24} color={color} /> }} />
             <Tabs.Screen name="recent" options={{ title: 'History', tabBarIcon: ({ color }) => <History size={24} color={color} /> }} />
             <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => <Settings size={24} color={color} /> }} />
             <Tabs.Screen name="inventory_mgmt" options={{ href: null }} />

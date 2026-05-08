@@ -132,10 +132,17 @@ export const authService = {
     login: (username: string, password: string) => api.post('/auth/login', { username, password }),
     register: (userData: any) => api.post('/auth/register', userData),
     updatePushToken: (userId: number, pushToken: string) => api.post('/auth/update-push-token', { userId, pushToken }),
+    getRoles: () => api.get('/auth/roles'),
+};
+
+export const userService = {
+    getPendingUsers: () => api.get('/users/pending'),
+    processApproval: (userId: number, action: 'Approve' | 'Reject') => api.put(`/users/approval/${userId}`, { action }),
 };
 
 export const inventoryService = {
     getMaterials: () => api.get('/inventory/materials'),
+    getMaterialTypes: () => api.get('/inventory/material-types'),
     createMaterial: (materialData: any) => api.post('/inventory/materials', materialData),
     deleteMaterial: (id: number) => api.delete(`/inventory/materials/${id}`),
     updateMaterialStock: (id: number, quantity: number) => api.put(`/inventory/materials/${id}`, { quantity }),
@@ -153,6 +160,8 @@ export const orderService = {
     getBuyerOrders: (buyerId: number) => api.get(`/orders/buyer/${buyerId}`),
     createOrder: (orderData: any) => api.post('/orders', orderData),
     updateOrderStatus: (id: number, status: string, completionNotes?: string) => api.put(`/orders/${id}`, { status, completionNotes }),
+    approveOrder: (id: number) => api.put(`/orders/${id}/approve`),
+    startManufacturing: (id: number) => api.put(`/orders/${id}/manufacture`),
     cancelOrder: (id: number, reason?: string) => api.delete(`/orders/${id}`, { data: { reason } }),
     getTracking: (id: string) => api.get(`/orders/track/${id}`),
 };
