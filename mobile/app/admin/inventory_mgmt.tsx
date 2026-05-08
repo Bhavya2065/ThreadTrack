@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Alert, Platform, useWindowDimensions, Pressable } from 'react-native';
 import { Text, Button, Portal, Modal, TextInput, MD3Colors, Appbar, IconButton, Chip, useTheme, RadioButton, Menu } from 'react-native-paper';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Plus, Trash2, Edit3, Package, Layers } from 'lucide-react-native';
+import { Plus, Trash2, Edit3, Package, Layers, Tag, Scale, AlertTriangle, Hash, Info } from 'lucide-react-native';
 import { inventoryService } from '../../src/services/api';
 import { createStyles } from '../../assets/Styles/InventoryMgmtStyles';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 import { EmptyState } from '../../src/components/EmptyState';
 import { useToast } from '../../src/context/ToastContext';
+import { CustomDropdown } from '../../src/components/v2/CustomDropdown';
 
 export default function InventoryManagement() {
     const { showToast } = useToast();
@@ -355,10 +356,20 @@ export default function InventoryManagement() {
             {/* Add Stock Modal */}
             <Portal>
                 <Modal visible={isStockModalVisible} onDismiss={() => setIsStockModalVisible(false)} contentContainerStyle={[styles.modal, styles.responsiveModal]}>
-                    <Text variant="headlineSmall" style={styles.modalTitle}>Refill Stock</Text>
-                    <Text style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}>Adding to: {stockForm.name}</Text>
+                    <View style={{ marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.surfaceVariant }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <View style={{ padding: 10, backgroundColor: theme.colors.primaryContainer, borderRadius: 12 }}>
+                                <Scale size={24} color={theme.colors.primary} />
+                            </View>
+                            <View>
+                                <Text variant="titleLarge" style={[styles.modalTitle, { marginBottom: 2, fontSize: 22 }]}>Refill Stock</Text>
+                                <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 14 }}>Adding to: <Text style={{ fontWeight: '600', color: theme.colors.onSurface }}>{stockForm.name}</Text></Text>
+                            </View>
+                        </View>
+                    </View>
+
                     <TextInput
-                        label="Quantity"
+                        label="Quantity to Add"
                         value={stockForm.amount}
                         onChangeText={t => setStockForm({ ...stockForm, amount: t })}
                         keyboardType="numeric"
@@ -367,24 +378,101 @@ export default function InventoryManagement() {
                         outlineColor={theme.colors.outline}
                         activeOutlineColor={theme.colors.primary}
                         textColor={theme.colors.onSurface}
+                        left={<TextInput.Icon icon={() => <Plus size={20} color={theme.colors.onSurfaceVariant} />} />}
+                        outlineStyle={{ borderRadius: 12 }}
                     />
-                    <View style={styles.modalButtons}>
-                        <Button mode="outlined" onPress={() => setIsStockModalVisible(false)} textColor={theme.colors.error} style={{ borderColor: theme.colors.error }} labelStyle={{ fontWeight: '500' }}>Cancel</Button>
-                        <Button mode="contained" onPress={handleAddStock} loading={submitting} labelStyle={{ fontWeight: '500' }}>Confirm Update</Button>
+                    
+                    <View style={[styles.modalButtons, { marginTop: 16 }]}>
+                        <Button mode="text" onPress={() => setIsStockModalVisible(false)} textColor={theme.colors.onSurfaceVariant} labelStyle={{ fontWeight: '600' }}>Cancel</Button>
+                        <Button mode="contained" onPress={handleAddStock} loading={submitting} labelStyle={{ fontWeight: '600' }} style={{ borderRadius: 8, paddingHorizontal: 8 }}>Confirm Refill</Button>
                     </View>
                 </Modal>
             </Portal>
 
             <Portal>
                 <Modal visible={isMaterialModalVisible} onDismiss={() => setIsMaterialModalVisible(false)} contentContainerStyle={[styles.modal, styles.responsiveModal]}>
-                    <Text variant="headlineSmall" style={styles.modalTitle}>New Material</Text>
-                    <TextInput label="Name" value={materialForm.name} onChangeText={t => setMaterialForm({ ...materialForm, name: t })} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Initial Stock" value={materialForm.stock} onChangeText={t => setMaterialForm({ ...materialForm, stock: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Unit (e.g. Metric Tons)" value={materialForm.unit} onChangeText={t => setMaterialForm({ ...materialForm, unit: t })} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Alert Threshold" value={materialForm.min} onChangeText={t => setMaterialForm({ ...materialForm, min: t })} keyboardType="numeric" mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <View style={styles.modalButtons}>
-                        <Button mode="outlined" onPress={() => setIsMaterialModalVisible(false)} textColor={theme.colors.error} style={{ borderColor: theme.colors.error }} labelStyle={{ fontWeight: '500' }}>Cancel</Button>
-                        <Button mode="contained" onPress={handleCreateMaterial} loading={submitting} labelStyle={{ fontWeight: '500' }}>Create</Button>
+                    <View style={{ marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.surfaceVariant }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <View style={{ padding: 10, backgroundColor: theme.colors.primaryContainer, borderRadius: 12 }}>
+                                <Package size={24} color={theme.colors.primary} />
+                            </View>
+                            <View>
+                                <Text variant="titleLarge" style={[styles.modalTitle, { marginBottom: 2, fontSize: 22 }]}>Add New Material</Text>
+                                <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 14 }}>Register a new raw material to your inventory</Text>
+                            </View>
+                        </View>
+                    </View>
+                    
+                    <TextInput 
+                        label="Material Name" 
+                        value={materialForm.name} 
+                        onChangeText={t => setMaterialForm({ ...materialForm, name: t })} 
+                        mode="outlined" 
+                        style={styles.input} 
+                        outlineColor={theme.colors.outline} 
+                        activeOutlineColor={theme.colors.primary} 
+                        textColor={theme.colors.onSurface}
+                        left={<TextInput.Icon icon={() => <Tag size={20} color={theme.colors.onSurfaceVariant} />} />}
+                        outlineStyle={{ borderRadius: 12 }}
+                    />
+                    
+                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                        <View style={{ flex: 1 }}>
+                            <TextInput 
+                                label="Initial Stock" 
+                                value={materialForm.stock} 
+                                onChangeText={t => setMaterialForm({ ...materialForm, stock: t })} 
+                                keyboardType="numeric" 
+                                mode="outlined" 
+                                style={[styles.input, { marginBottom: 0 }]} 
+                                outlineColor={theme.colors.outline} 
+                                activeOutlineColor={theme.colors.primary} 
+                                textColor={theme.colors.onSurface} 
+                                left={<TextInput.Icon icon={() => <Hash size={20} color={theme.colors.onSurfaceVariant} />} />}
+                                outlineStyle={{ borderRadius: 12 }}
+                            />
+                        </View>
+                        <View style={{ flex: 1, marginTop: 6 }}>
+                            <CustomDropdown
+                                value={materialForm.unit}
+                                onSelect={(val) => setMaterialForm({ ...materialForm, unit: val })}
+                                options={[
+                                    { label: 'Metric Tons', value: 'Metric Tons' },
+                                    { label: 'Kg', value: 'Kg' },
+                                    { label: 'Meters', value: 'Meters' },
+                                    { label: 'Rolls', value: 'Rolls' },
+                                    { label: 'Units', value: 'Units' },
+                                    { label: 'Liters', value: 'Liters' },
+                                ]}
+                                placeholder="Select Unit"
+                            />
+                        </View>
+                    </View>
+                    
+                    <TextInput 
+                        label="Alert Threshold" 
+                        value={materialForm.min} 
+                        onChangeText={t => setMaterialForm({ ...materialForm, min: t })} 
+                        keyboardType="numeric" 
+                        mode="outlined" 
+                        style={styles.input} 
+                        outlineColor={theme.colors.outline} 
+                        activeOutlineColor={theme.colors.primary} 
+                        textColor={theme.colors.onSurface} 
+                        left={<TextInput.Icon icon={() => <AlertTriangle size={20} color={theme.colors.onSurfaceVariant} />} />}
+                        outlineStyle={{ borderRadius: 12 }}
+                    />
+                    
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceVariant, padding: 12, borderRadius: 12, marginBottom: 24, marginTop: 8 }}>
+                        <Info size={18} color={theme.colors.onSurfaceVariant} style={{ marginRight: 8 }} />
+                        <Text style={{ flex: 1, fontSize: 13, color: theme.colors.onSurfaceVariant, lineHeight: 18 }}>
+                            When stock falls below the alert threshold, you'll be notified to restock.
+                        </Text>
+                    </View>
+                    
+                    <View style={[styles.modalButtons, { marginTop: 0 }]}>
+                        <Button mode="text" onPress={() => setIsMaterialModalVisible(false)} textColor={theme.colors.onSurfaceVariant} labelStyle={{ fontWeight: '600' }}>Cancel</Button>
+                        <Button mode="contained" onPress={handleCreateMaterial} loading={submitting} labelStyle={{ fontWeight: '600' }} style={{ borderRadius: 8, paddingHorizontal: 8 }}>Create Material</Button>
                     </View>
                 </Modal>
             </Portal>

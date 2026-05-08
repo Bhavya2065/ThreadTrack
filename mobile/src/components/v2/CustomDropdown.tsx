@@ -5,7 +5,7 @@ import { ChevronDown } from 'lucide-react-native';
 import { Tokens } from '../../theme/tokens';
 
 interface CustomDropdownProps {
-  label: string;
+  label?: string;
   value: string | string[];
   options: { label: string; value: string; icon?: React.ReactNode }[];
   onSelect: (value: string) => void;
@@ -74,7 +74,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
   return (
     <View style={styles.container} onLayout={(e) => setLayoutWidth(e.nativeEvent.layout.width)}>
-      <Text style={styles.externalLabel}>{label}</Text>
+      {!!label && <Text style={styles.externalLabel}>{label}</Text>}
       
       <Menu
         visible={visible}
