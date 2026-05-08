@@ -110,21 +110,23 @@ export default function AdminHistory() {
                         <View style={{ flexDirection: 'row', gap: 0 }}>
                             <Button
                                 mode="text"
-                                icon={() => <Download size={18} color={theme.colors.primary} />}
+                                icon={() => <Download size={18} color={filteredHistory.length === 0 ? theme.colors.surfaceDisabled : theme.colors.primary} />}
                                 onPress={() => reportExporter.exportOrdersToCSV(filteredHistory)}
                                 textColor={theme.colors.primary}
                                 labelStyle={{ fontWeight: '700', fontSize: 13 }}
                                 compact
+                                disabled={filteredHistory.length === 0}
                             >
                                 CSV
                             </Button>
                             <Button
                                 mode="text"
-                                icon={() => <FileText size={18} color={theme.colors.primary} />}
+                                icon={() => <FileText size={18} color={filteredHistory.length === 0 ? theme.colors.surfaceDisabled : theme.colors.primary} />}
                                 onPress={() => reportExporter.exportOrdersToPDF(filteredHistory, "Order History Report")}
                                 textColor={theme.colors.primary}
                                 labelStyle={{ fontWeight: '700', fontSize: 13 }}
                                 compact
+                                disabled={filteredHistory.length === 0}
                             >
                                 PDF
                             </Button>
