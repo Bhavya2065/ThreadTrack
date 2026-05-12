@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Animated, Easing } from 'react-native';
+import { View, StyleSheet, Animated, Easing, Platform } from 'react-native';
 import { useTheme } from 'react-native-paper';
 
 interface SkeletonLoaderProps {
@@ -25,13 +25,13 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
                     toValue: 1,
                     duration: 1000,
                     easing: Easing.linear,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(animatedValue, {
                     toValue: 0,
                     duration: 1000,
                     easing: Easing.linear,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();

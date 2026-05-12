@@ -220,9 +220,9 @@ export default function WorkerInput() {
                                                 <Button mode="text" compact onPress={fetchData} loading={submitting} textColor={theme.colors.tertiary}>Sync</Button>
                                             </View>
                                         )}
-                                        {orders.map(order => (
+                                        {orders.map((order, index) => (
                                             <Button
-                                                key={order.OrderID}
+                                                key={`order-${order.OrderID}-${index}`}
                                                 mode={selectedOrderId === order.OrderID ? "contained" : "outlined"}
                                                 onPress={() => {
                                                     Haptics.selectionAsync();
@@ -259,10 +259,17 @@ export default function WorkerInput() {
                                                                 {
                                                                     width: `${Math.min(100, progress * 100)}%`,
                                                                     backgroundColor: progress >= 1 ? theme.colors.primary : theme.colors.primary,
-                                                                    shadowColor: theme.colors.primary,
-                                                                    shadowOffset: { width: 0, height: 0 },
-                                                                    shadowOpacity: 0.8,
-                                                                    shadowRadius: 10,
+                                                                    ...Platform.select({
+                                                                        web: {
+                                                                            boxShadow: `0 0 10px ${theme.colors.primary}80`,
+                                                                        },
+                                                                        default: {
+                                                                            shadowColor: theme.colors.primary,
+                                                                            shadowOffset: { width: 0, height: 0 },
+                                                                            shadowOpacity: 0.8,
+                                                                            shadowRadius: 10,
+                                                                        }
+                                                                    })
                                                                 }
                                                             ]} />
                                                         </View>
@@ -329,7 +336,7 @@ export default function WorkerInput() {
                         <Text style={[styles.sectionTitle, styles.historySection]}>Contribution History</Text>
                         <GlassCard style={{ padding: 0 }}>
                             {logs.map((log, index) => (
-                                <View key={log.LogID || index}>
+                                <View key={`log-${log.LogID || index}-${index}`}>
                                     <List.Item
                                         title={`${log.QuantityProduced} ${log.ProductName}`}
                                         titleStyle={{ color: theme.colors.onSurface, fontWeight: '600' }}

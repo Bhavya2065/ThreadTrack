@@ -63,8 +63,8 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
             timerRef.current = null;
         }
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
-            Animated.timing(translateX, { toValue: 120, duration: 250, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.timing(translateX, { toValue: 120, duration: 250, useNativeDriver: Platform.OS !== 'web' }),
         ]).start(() => setVisible(false));
     }, [fadeAnim, translateX]);
 
@@ -80,8 +80,8 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
         translateX.setValue(120);
 
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
-            Animated.spring(translateX, { toValue: 0, useNativeDriver: true, tension: 80, friction: 10 }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.spring(translateX, { toValue: 0, useNativeDriver: Platform.OS !== 'web', tension: 80, friction: 10 }),
         ]).start();
 
         timerRef.current = setTimeout(() => {

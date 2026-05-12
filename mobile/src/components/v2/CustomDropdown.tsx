@@ -36,7 +36,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     setHighlightedIndex(-1);
     Animated.spring(rotation, {
       toValue: 1,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
       friction: 8,
       tension: 40
     }).start();
@@ -47,7 +47,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     setHighlightedIndex(-1);
     Animated.spring(rotation, {
       toValue: 0,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
       friction: 8,
       tension: 40
     }).start();
