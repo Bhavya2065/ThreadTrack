@@ -46,12 +46,15 @@ const KPICard = ({ icon: Icon, label, value, color, index, trend, footer }: any)
                 <Text style={styles.kpiValue}>{value}</Text>
                 <Text style={styles.kpiLabel}>{label}</Text>
 
-                <View style={styles.kpiDivider} />
-
-                <View style={styles.kpiFooter}>
-                    <Text style={styles.kpiFooterText} numberOfLines={2}>{footer}</Text>
-                    <MiniChart color={color} />
-                </View>
+                {Platform.OS === 'web' && (
+                    <>
+                        <View style={styles.kpiDivider} />
+                        <View style={styles.kpiFooter}>
+                            <Text style={styles.kpiFooterText} numberOfLines={2}>{footer}</Text>
+                            <MiniChart color={color} />
+                        </View>
+                    </>
+                )}
             </GlassCard>
         </TransitionView>
     );

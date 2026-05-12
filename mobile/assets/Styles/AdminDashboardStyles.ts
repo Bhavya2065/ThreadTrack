@@ -39,7 +39,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     kpiCard: {
-        width: Platform.OS === 'web' ? '24%' : '100%',
+        width: Platform.OS === 'web' ? '24%' : '48.5%',
         marginBottom: Tokens.spacing.md,
         borderRadius: 16,
         overflow: 'hidden',
@@ -49,7 +49,7 @@ export const createStyles = (theme: MD3Theme) => StyleSheet.create({
         width: '100%',
     },
     kpiCardInner: {
-        padding: 20,
+        padding: Tokens.spacing.md,
         alignItems: 'flex-start',
     },
     kpiHeader: {
