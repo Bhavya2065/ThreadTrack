@@ -150,7 +150,7 @@ export default function AddProduct() {
                         outlineStyle={{ borderRadius: 10 }}
                         activeOutlineColor={theme.colors.primary}
                         textColor={theme.colors.onSurface}
-                        disabled={!!productForm.id}
+                        disabled={false}
                     />
 
                     <CustomDropdown

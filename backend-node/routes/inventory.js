@@ -105,37 +105,72 @@ router.post('/materials', auth(['Admin']), async (req, res) => {
         }
 
         const pool = await poolPromise;
-        const result = await pool.request()
-            .input('name', sql.NVarChar, materialName)
-            .input('stock', sql.Float, currentStock)
-            .input('unit', sql.NVarChar, unit)
-            .input('min', sql.Float, minimumRequired || 0)
-            .input('typeId', sql.Int, typeId || null)
-            .query(`
-                INSERT INTO RawMaterials (Name, CurrentStock, Unit, MinimumRequired, TypeID) 
-                OUTPUT INSERTED.MaterialID
-                VALUES (@name, @stock, @unit, @min, @typeId)
-            `);
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
 
-        const newMaterialId = result.recordset[0].MaterialID;
+        try {
+            let finalTypeId = typeId || null;
 
-        // Log material creation
-        await logAction({
-            userId: req.user.id,
-            action: 'CREATE_MATERIAL',
-            entityName: 'RawMaterials',
-            entityId: newMaterialId,
-            details: {
-                name: materialName,
-                initialStock: currentStock,
-                unit: unit,
-                typeId: typeId,
-                timestamp: new Date().toISOString()
-            },
-            ipAddress: req.ip
-        });
+            // If no typeId provided, try to find or create one based on the name
+            if (!finalTypeId) {
+                // Check if a type with this name already exists
+                const typeCheck = await transaction.request()
+                    .input('name', sql.NVarChar, materialName)
+                    .query('SELECT ID FROM MaterialTypes WHERE TypeName = @name');
 
-        res.status(201).json({ message: 'Material created successfully' });
+                if (typeCheck.recordset.length > 0) {
+                    finalTypeId = typeCheck.recordset[0].ID;
+                } else {
+                    // Create a new MaterialType
+                    const newTypeResult = await transaction.request()
+                        .input('name', sql.NVarChar, materialName)
+                        .input('usr', sql.VarChar, req.user.username || 'admin')
+                        .input('now', sql.DateTime, new Date())
+                        .query(`
+                            INSERT INTO MaterialTypes (TypeName, CRE_USR_ID, CRE_USR_DT, LAST_USR_ID, LAST_USR_DT, LAST_USR_VER)
+                            OUTPUT INSERTED.ID
+                            VALUES (@name, @usr, @now, @usr, @now, NULL)
+                        `);
+                    finalTypeId = newTypeResult.recordset[0].ID;
+                }
+            }
+
+            const result = await transaction.request()
+                .input('name', sql.NVarChar, materialName)
+                .input('stock', sql.Float, currentStock)
+                .input('unit', sql.NVarChar, unit)
+                .input('min', sql.Float, minimumRequired || 0)
+                .input('typeId', sql.Int, finalTypeId)
+                .query(`
+                    INSERT INTO RawMaterials (Name, CurrentStock, Unit, MinimumRequired, TypeID) 
+                    OUTPUT INSERTED.MaterialID
+                    VALUES (@name, @stock, @unit, @min, @typeId)
+                `);
+
+            const newMaterialId = result.recordset[0].MaterialID;
+
+            // Log material creation
+            await logAction({
+                userId: req.user.id,
+                action: 'CREATE_MATERIAL',
+                entityName: 'RawMaterials',
+                entityId: newMaterialId,
+                details: {
+                    name: materialName,
+                    initialStock: currentStock,
+                    unit: unit,
+                    typeId: finalTypeId,
+                    timestamp: new Date().toISOString()
+                },
+                ipAddress: req.ip
+            });
+
+            await transaction.commit();
+            res.status(201).json({ message: 'Material created successfully', materialId: newMaterialId });
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

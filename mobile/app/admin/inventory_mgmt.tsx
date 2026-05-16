@@ -414,7 +414,7 @@ export default function InventoryManagement() {
                             label="Material Name" 
                             value={materialForm.name} 
                             onChangeText={t => {
-                                setMaterialForm({ ...materialForm, name: t });
+                                setMaterialForm({ ...materialForm, name: t, typeId: '' });
                                 setIsTypeSuggestionsVisible(t.length > 0);
                                 setSelectedTypeIndex(-1);
                             }} 
