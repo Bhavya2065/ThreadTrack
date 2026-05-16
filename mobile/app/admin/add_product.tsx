@@ -31,9 +31,28 @@ export default function AddProduct() {
         isActive: params.isActive === 'true' || params.isActive === undefined
     });
 
+    const [errors, setErrors] = useState({
+        quantityPerUnit: '',
+        price: ''
+    });
+
     useEffect(() => {
         fetchMaterials();
     }, []);
+
+    useEffect(() => {
+        if (params.id) {
+            setProductForm({
+                id: parseInt(params.id as string),
+                name: (params.name as string) || '',
+                materialIds: params.materialIds ? (params.materialIds as string).split(',') : [],
+                quantityPerUnit: (params.quantityPerUnit as string) || '',
+                price: (params.price as string) || '',
+                imageUrl: (params.imageUrl as string) || '',
+                isActive: params.isActive === 'true' || params.isActive === undefined
+            });
+        }
+    }, [params.id]);
 
     const fetchMaterials = async () => {
         setLoading(true);
@@ -103,7 +122,7 @@ export default function AddProduct() {
             <View style={styles.container}>
                 <Appbar.Header style={styles.appbarHeader}>
                     <Appbar.BackAction onPress={() => router.push('/admin/inventory_mgmt')} color={theme.colors.onSurfaceVariant} />
-                    <Appbar.Content title={productForm.id ? "Edit Product" : "New Catalog Item"} titleStyle={styles.appbarTitle} />
+                    <Appbar.Content title={productForm.id ? "Edit Catalog Item" : "New Catalog Item"} titleStyle={styles.appbarTitle} />
                 </Appbar.Header>
                 <View style={{ flex: 1, justifyContent: 'center' }}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -116,7 +135,7 @@ export default function AddProduct() {
         <View style={styles.container}>
             <Appbar.Header style={styles.appbarHeader}>
                 <Appbar.BackAction onPress={() => router.push('/admin/inventory_mgmt')} color={theme.colors.onSurfaceVariant} />
-                <Appbar.Content title={productForm.id ? "Edit Product" : "New Catalog Item"} titleStyle={styles.appbarTitle} />
+                <Appbar.Content title={productForm.id ? "Edit Catalog Item" : "New Catalog Item"} titleStyle={styles.appbarTitle} />
             </Appbar.Header>
 
             <ScrollView style={styles.content}>
@@ -153,8 +172,43 @@ export default function AddProduct() {
                         }))}
                     />
 
-                    <TextInput label="Qty per Unit" value={productForm.quantityPerUnit} onChangeText={t => setProductForm({ ...productForm, quantityPerUnit: t })} keyboardType="numeric" mode="outlined" style={[styles.input, { backgroundColor: theme.colors.surface }]} outlineStyle={{ borderRadius: 10 }} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
-                    <TextInput label="Unit Price (₹)" value={productForm.price} onChangeText={t => setProductForm({ ...productForm, price: t })} keyboardType="numeric" mode="outlined" style={[styles.input, { backgroundColor: theme.colors.surface }]} outlineStyle={{ borderRadius: 10 }} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} />
+                    <TextInput 
+                        label="Qty per Unit" 
+                        value={productForm.quantityPerUnit} 
+                        onChangeText={t => {
+                            setProductForm({ ...productForm, quantityPerUnit: t });
+                            const isValid = /^\d*\.?\d*$/.test(t);
+                            setErrors(prev => ({ ...prev, quantityPerUnit: isValid ? '' : 'Only digits allowed' }));
+                        }} 
+                        keyboardType="numeric" 
+                        mode="outlined" 
+                        error={!!errors.quantityPerUnit}
+                        style={[styles.input, { backgroundColor: theme.colors.surface }]} 
+                        outlineStyle={{ borderRadius: 10 }} 
+                        outlineColor={theme.colors.outline} 
+                        activeOutlineColor={theme.colors.primary} 
+                        textColor={theme.colors.onSurface} 
+                    />
+                    {!!errors.quantityPerUnit && <Text style={{ color: theme.colors.error, fontSize: 12, marginTop: -8, marginBottom: 10, marginLeft: 4 }}>{errors.quantityPerUnit}</Text>}
+
+                    <TextInput 
+                        label="Unit Price (₹)" 
+                        value={productForm.price} 
+                        onChangeText={t => {
+                            setProductForm({ ...productForm, price: t });
+                            const isValid = /^\d*\.?\d*$/.test(t);
+                            setErrors(prev => ({ ...prev, price: isValid ? '' : 'Only digits allowed' }));
+                        }} 
+                        keyboardType="numeric" 
+                        mode="outlined" 
+                        error={!!errors.price}
+                        style={[styles.input, { backgroundColor: theme.colors.surface }]} 
+                        outlineStyle={{ borderRadius: 10 }} 
+                        outlineColor={theme.colors.outline} 
+                        activeOutlineColor={theme.colors.primary} 
+                        textColor={theme.colors.onSurface} 
+                    />
+                    {!!errors.price && <Text style={{ color: theme.colors.error, fontSize: 12, marginTop: -8, marginBottom: 10, marginLeft: 4 }}>{errors.price}</Text>}
 
                     <View style={{ marginTop: 10 }}>
                         <Text style={styles.label}>Publish Status</Text>
@@ -174,7 +228,7 @@ export default function AddProduct() {
 
                     <View style={{ marginTop: 30 }}>
                         <Button mode="contained" onPress={handleSaveProduct} loading={submitting} contentStyle={{ height: 48 }} labelStyle={{ fontSize: 16, fontWeight: '700' }}>
-                            {productForm.id ? 'Save Changes' : 'Create Product'}
+                            {productForm.id ? 'Update Catalog Item' : 'Create Product'}
                         </Button>
                         <Button mode="outlined" onPress={() => router.push('/admin/inventory_mgmt')} style={{ marginTop: 12, borderColor: theme.colors.error }} contentStyle={{ height: 48 }} textColor={theme.colors.error} labelStyle={{ fontSize: 16, fontWeight: '700' }}>
                             Cancel
