@@ -125,7 +125,7 @@ export default function OrderDetails() {
 
         const qtyPerUnit = product.MaterialQuantityPerUnit || 0;
         const currentStock = material.CurrentStock || 0;
-        const totalOrdered = order.Quantity;
+        const totalOrdered = Math.max(0, order.Quantity - (order.ProducedQuantity || 0));
         const capacityUnits = qtyPerUnit > 0 ? Math.floor(currentStock / qtyPerUnit) : 0;
         const immediate = Math.min(totalOrdered, capacityUnits);
         const pending = Math.max(0, totalOrdered - immediate);
