@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, ScrollView, RefreshControl, useWindowDimensions, Platform, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Text, Appbar, useTheme, SegmentedButtons } from 'react-native-paper';
+import { Text, Appbar, useTheme } from 'react-native-paper';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { TrendingUp, BarChart as ChartIcon, Package, Zap, Activity, AlertCircle } from 'lucide-react-native';
 import { analyticsService, setToken } from '../../src/services/api';
@@ -69,13 +69,12 @@ export default function AdminAnalytics() {
     const [refreshing, setRefreshing] = useState(false);
     const [analytics, setAnalytics] = useState<any>(null);
     const [predictions, setPredictions] = useState<any[]>([]);
-    const [predictionWindow, setPredictionWindow] = useState('7');
 
-    const fetchData = async (window: string = predictionWindow) => {
+    const fetchData = async () => {
         try {
             const [analyticsRes, predictionsRes] = await Promise.all([
                 analyticsService.getProductionSummary().catch(() => ({ data: null })),
-                analyticsService.getPredictions(parseInt(window)).catch(() => ({ data: [] }))
+                analyticsService.getPredictions(7).catch(() => ({ data: [] }))
             ]);
             setAnalytics(analyticsRes.data);
             setPredictions(predictionsRes.data);
@@ -234,19 +233,6 @@ export default function AdminAnalytics() {
 
                     <TransitionView index={5}>
                         <Text variant="titleMedium" style={styles.sectionTitle}>Inventory Forecasting</Text>
-                        <SegmentedButtons
-                            value={predictionWindow}
-                            onValueChange={(val) => {
-                                setPredictionWindow(val);
-                                fetchData(val);
-                            }}
-                            buttons={[
-                                { value: '7', label: '7D' },
-                                { value: '14', label: '14D' },
-                                { value: '30', label: '30D' },
-                            ]}
-                            style={styles.segmentedButtons}
-                        />
 
                         {predictions && predictions.length > 0 && predictions.some(p => typeof p.days_remaining === 'number') ? (
                             <View style={styles.analyticsWrapper}>
