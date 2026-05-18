@@ -10,8 +10,10 @@ router.post('/log', auth(['Worker']), async (req, res) => {
         const { productId, orderId, quantityProduced } = req.body;
         const workerId = req.user.id;
 
-        if (!productId || !quantityProduced || quantityProduced <= 0) {
-            return res.status(400).json({ error: 'Product ID and a positive quantity are required' });
+        const qty = Number(quantityProduced);
+
+        if (!productId || isNaN(qty) || !Number.isInteger(qty) || qty <= 0) {
+            return res.status(400).json({ error: 'Product ID and a positive whole number quantity are required' });
         }
 
         const pool = await poolPromise;
@@ -39,8 +41,8 @@ router.post('/log', auth(['Worker']), async (req, res) => {
                 }
 
                 const remaining = Quantity - ProducedQuantity;
-                if (quantityProduced > remaining) {
-                    const error = new Error(`You can't log ${quantityProduced} units because this order only needs ${remaining} more to finish.`);
+                if (qty > remaining) {
+                    const error = new Error(`You can't log ${qty} units because this order only needs ${remaining} more to finish.`);
                     error.statusCode = 400;
                     throw error;
                 }
@@ -51,7 +53,7 @@ router.post('/log', auth(['Worker']), async (req, res) => {
                 .input('workerId', sql.Int, workerId)
                 .input('productId', sql.Int, productId)
                 .input('orderId', sql.Int, orderId || null)
-                .input('quantity', sql.Int, quantityProduced)
+                .input('quantity', sql.Int, qty)
                 .query('INSERT INTO ProductionLogs (WorkerID, ProductID, OrderID, QuantityProduced, LogDate) OUTPUT INSERTED.LogID VALUES (@workerId, @productId, @orderId, @quantity, GETUTCDATE())');
 
             const newLogId = productionResult.recordset[0].LogID;
@@ -65,7 +67,7 @@ router.post('/log', auth(['Worker']), async (req, res) => {
                 details: {
                     productId: productId,
                     orderId: orderId || 'None',
-                    quantityLogged: quantityProduced,
+                    quantityLogged: qty,
                     timestamp: new Date().toISOString()
                 },
                 ipAddress: req.ip
@@ -101,7 +103,7 @@ router.post('/log', auth(['Worker']), async (req, res) => {
 
             for (const material of materialsResult.recordset) {
                 const { MaterialID, MaterialQuantityPerUnit, CurrentStock, MaterialName } = material;
-                const totalConsumed = quantityProduced * MaterialQuantityPerUnit;
+                const totalConsumed = qty * MaterialQuantityPerUnit;
 
                 // Check for Insufficient Stock (Strict - no negative inventory allowed)
                 if (totalConsumed > CurrentStock) {

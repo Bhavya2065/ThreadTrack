@@ -94,6 +94,17 @@ export default function WorkerInput() {
             return;
         }
 
+        const parsedQty = Number(quantity);
+        if (!Number.isInteger(parsedQty) || parsedQty <= 0) {
+            showToast({
+                title: 'Invalid Quantity',
+                message: 'Please enter a positive whole number.',
+                type: 'warning'
+            });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            return;
+        }
+
         if (!selectedOrderId) {
             showToast({
                 title: 'No Order Selected',
@@ -107,7 +118,7 @@ export default function WorkerInput() {
         const selectedOrder = orders.find(o => o.OrderID === selectedOrderId);
         if (selectedOrder) {
             const remaining = Math.max(0, selectedOrder.Quantity - selectedOrder.ProducedQuantity);
-            if (parseInt(quantity) > remaining) {
+            if (parsedQty > remaining) {
                 showToast({
                     title: 'Limit Exceeded',
                     message: remaining === 0 ? 'This order is already complete!' : `Only ${remaining} units remaining.`,
@@ -125,7 +136,7 @@ export default function WorkerInput() {
                 workerId,
                 productId: selectedOrder?.ProductID || 1,
                 orderId: selectedOrderId,
-                quantityProduced: parseInt(quantity)
+                quantityProduced: parsedQty
             });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             
