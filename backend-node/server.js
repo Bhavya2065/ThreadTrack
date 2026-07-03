@@ -16,7 +16,6 @@ app.use(express.json());
 
 // Request Logging
 app.use((req, res, next) => {
-
     next();
 });
 
