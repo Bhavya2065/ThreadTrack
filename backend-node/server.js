@@ -9,15 +9,11 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors({
     origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*', // Allow specific origins or all for development
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow these methods for access 
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
-
-// Request Logging
-app.use((req, res, next) => {
-    next();
-});
+app.use(express.json()); 
+// This line tells your server to read and understand JSON data sent in request bodies. It saves this data into req.body so you can use it in your code
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -25,13 +21,15 @@ const inventoryRoutes = require('./routes/inventory');
 const orderRoutes = require('./routes/orders');
 const productionRoutes = require('./routes/production');
 const analyticsRoutes = require('./routes/analytics');
+const userRoutes = require('./routes/users');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/production', productionRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/users', require('./routes/users'));
+app.use('/api/users',userRoutes);
+// app.use('/api/users', require('./routes/users'));
 
 // Health Check
 app.get('/', (req, res) => {
