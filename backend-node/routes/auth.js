@@ -192,26 +192,4 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Update Push Token
-// Logout User (Client side token clear, but we log the intent)
-router.post('/logout', async (req, res) => {
-    try {
-        const { userId, username } = req.body;
-        if (userId) {
-            await logAction({
-                userId: userId,
-                action: 'USER_LOGOUT',
-                details: {
-                    username: username || 'Unknown',
-                    logoutTime: new Date().toISOString()
-                },
-                ipAddress: req.ip
-            });
-        }
-        res.json({ message: 'Logged out successfully' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 module.exports = router;

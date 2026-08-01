@@ -30,11 +30,6 @@ app.use('/api/production', productionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users',userRoutes);
 
-// Health Check
-app.get('/', (req, res) => {
-    res.send('ThreadTrack API is running...');
-});
-
 // Process Error Handlers (Prevents silent exits)
 process.on('uncaughtException', (err) => {
     console.error('🔥 Uncaught Exception:', err);
