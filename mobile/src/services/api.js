@@ -7,7 +7,7 @@ const getBaseUrl = () => {
     if (process.env.EXPO_PUBLIC_API_URL)
         return process.env.EXPO_PUBLIC_API_URL;
     if (Platform.OS === 'web')
-        return 'http://localhost:3000/api';
+        return 'https://threadtrack-node-backend.onrender.com/api';
     // hostUri usually looks like "192.168.x.x:8081"
     const hostUri = Constants.expoConfig?.hostUri;
     const ip = hostUri?.split(':')[0];
