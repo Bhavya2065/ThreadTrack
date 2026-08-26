@@ -39,9 +39,6 @@ if (neonUrl) {
             // Convert MSSQL OUTPUT INSERTED.ColName to RETURNING ColName
             sqlStr = sqlStr.replace(/OUTPUT\s+INSERTED\.(\w+)/gi, 'RETURNING "$1"');
 
-            // Convert MSSQL ISNULL(a, b) to COALESCE(a, b)
-            sqlStr = sqlStr.replace(/ISNULL\(/gi, 'COALESCE(');
-
             // Convert MSSQL (SELECT ... FOR JSON PATH) to PostgreSQL json_agg subquery
             sqlStr = sqlStr.replace(/\(\s*SELECT\s+MaterialID\s+FROM\s+ProductMaterials\s+(\w+)\s+WHERE\s+([^)]+)\s+FOR\s+JSON\s+PATH\s*\)/gi,
                 '(SELECT json_agg(json_build_object(\'MaterialID\', $1.materialid)) FROM productmaterials $1 WHERE $2)'

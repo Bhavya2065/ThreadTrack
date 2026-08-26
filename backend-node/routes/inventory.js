@@ -270,7 +270,7 @@ router.get('/products', auth(), async (req, res) => {
                 SELECT p.*, 
                     (SELECT MaterialID FROM ProductMaterials pm WHERE pm.ProductID = p.ProductID FOR JSON PATH) as MaterialIDs
                 FROM Products p 
-                WHERE ISNULL(p.IsActive, 1) = 1 OR @isUserAdmin = 1
+                WHERE p.IsActive = true OR p.IsActive IS NULL OR @isUserAdmin = 1
             `);
 
         // Parse MaterialIDs from JSON string if necessary
