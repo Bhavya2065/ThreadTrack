@@ -53,6 +53,22 @@ if (neonUrl) {
                 }
             });
 
+            // Convert MSSQL SELECT TOP N to LIMIT N
+            if (/SELECT\s+TOP\s+(\d+)/i.test(sqlStr)) {
+                const topMatch = sqlStr.match(/SELECT\s+TOP\s+(\d+)/i);
+                if (topMatch) {
+                    const topNum = topMatch[1];
+                    sqlStr = sqlStr.replace(/SELECT\s+TOP\s+\d+/gi, 'SELECT');
+                    sqlStr += ` LIMIT ${topNum}`;
+                }
+            }
+
+            // Convert DATEADD(day, N, GETDATE()/GETUTCDATE()) to PostgreSQL (CURRENT_TIMESTAMP +/- INTERVAL 'N days')
+            sqlStr = sqlStr.replace(/DATEADD\s*\(\s*day\s*,\s*(-?\d+)\s*,\s*(GETDATE\(\)|GETUTCDATE\(\))\s*\)/gi, (match, p1) => {
+                const n = parseInt(p1);
+                return n >= 0 ? `(CURRENT_TIMESTAMP + INTERVAL '${n} days')` : `(CURRENT_TIMESTAMP - INTERVAL '${Math.abs(n)} days')`;
+            });
+
             // Replace MSSQL functions with Postgres equivalents
             sqlStr = sqlStr.replace(/GETDATE\(\)/gi, 'CURRENT_TIMESTAMP');
             sqlStr = sqlStr.replace(/GETUTCDATE\(\)/gi, 'CURRENT_TIMESTAMP');
