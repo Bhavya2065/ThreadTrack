@@ -1,31 +1,147 @@
-const sql = require('mssql');
-require('dotenv').config();
+const requireDotenv = require('dotenv');
+requireDotenv.config();
 
-const dbConfig = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER,
-    database: process.env.DB_DATABASE,
-    options: {
-        encrypt: false, // For local development
-        trustServerCertificate: true, // For local development
-    },
-    pool: {
-        max: 10,
-        min: 0,
-    }
+const neonUrl = process.env.NEON_DATABASE_URL;
+
+let poolPromise;
+let sql = {
+    NVarChar: 'NVarChar',
+    Int: 'Int',
+    Float: 'Float',
+    Decimal: 'Decimal',
+    DateTime: 'DateTime',
+    Bit: 'Bit',
+    Text: 'Text'
 };
 
-const poolPromise = new sql.ConnectionPool(dbConfig)
-    .connect()
-    .then(pool => {
-        console.log('✅ Connected to MSSQL Database');
-        return pool;
-    })
-    .catch(err => {
-        console.error('❌ Database Connection Failed! Bad Config: ', err);
-        throw err;
+if (neonUrl) {
+    console.log("⚡ Using Neon PostgreSQL Cloud Database Adapter...");
+    const { Pool } = require('pg');
+    const pgPool = new Pool({
+        connectionString: neonUrl,
+        ssl: { rejectUnauthorized: false }
     });
+
+    class PgRequestWrapper {
+        constructor() {
+            this.inputs = [];
+        }
+
+        input(name, type, value) {
+            this.inputs.push({ name, value });
+            return this;
+        }
+
+        async query(queryText) {
+            let sqlStr = queryText;
+            const values = [];
+
+            // Convert MSSQL OUTPUT INSERTED.ColName to RETURNING ColName
+            sqlStr = sqlStr.replace(/OUTPUT\s+INSERTED\.(\w+)/gi, 'RETURNING "$1"');
+
+            // Replace @paramName with $1, $2, etc.
+            this.inputs.forEach((inp) => {
+                const regex = new RegExp(`@${inp.name}\\b`, 'gi');
+                if (regex.test(sqlStr)) {
+                    values.push(inp.value);
+                    sqlStr = sqlStr.replace(regex, `$${values.length}`);
+                }
+            });
+
+            // Replace MSSQL functions with Postgres equivalents
+            sqlStr = sqlStr.replace(/GETDATE\(\)/gi, 'CURRENT_TIMESTAMP');
+            sqlStr = sqlStr.replace(/GETUTCDATE\(\)/gi, 'CURRENT_TIMESTAMP');
+
+            const res = await pgPool.query(sqlStr, values);
+
+            // Normalize column casing in recordset (e.g. userid -> UserID, username -> Username)
+            const recordset = (res.rows || []).map(row => {
+                const normalized = {};
+                for (const key of Object.keys(row)) {
+                    const kLower = key.toLowerCase();
+                    let targetKey = key;
+                    if (kLower === 'userid') targetKey = 'UserID';
+                    else if (kLower === 'username') targetKey = 'Username';
+                    else if (kLower === 'passwordhash') targetKey = 'PasswordHash';
+                    else if (kLower === 'role') targetKey = 'Role';
+                    else if (kLower === 'createdat') targetKey = 'CreatedAt';
+                    else if (kLower === 'pushtoken') targetKey = 'PushToken';
+                    else if (kLower === 'status') targetKey = 'Status';
+                    else if (kLower === 'roleid') targetKey = 'RoleID';
+                    else if (kLower === 'requestedrole') targetKey = 'RequestedRole';
+                    else if (kLower === 'materialid') targetKey = 'MaterialID';
+                    else if (kLower === 'productid') targetKey = 'ProductID';
+                    else if (kLower === 'orderid') targetKey = 'OrderID';
+                    else if (kLower === 'productname') targetKey = 'ProductName';
+                    else if (kLower === 'currentstock') targetKey = 'CurrentStock';
+                    else if (kLower === 'minimumrequired') targetKey = 'MinimumRequired';
+                    else if (kLower === 'unit') targetKey = 'Unit';
+                    else if (kLower === 'typename') targetKey = 'TypeName';
+                    else if (kLower === 'price') targetKey = 'Price';
+                    else if (kLower === 'imageurl') targetKey = 'ImageURL';
+                    else if (kLower === 'isactive') targetKey = 'IsActive';
+                    else if (kLower === 'quantity') targetKey = 'Quantity';
+                    else if (kLower === 'orderdate') targetKey = 'OrderDate';
+                    else if (kLower === 'completiondate') targetKey = 'CompletionDate';
+                    else if (kLower === 'completionnotes') targetKey = 'CompletionNotes';
+                    else if (kLower === 'logid') targetKey = 'LogID';
+                    else if (kLower === 'workerid') targetKey = 'WorkerID';
+                    else if (kLower === 'quantityproduced') targetKey = 'QuantityProduced';
+                    else if (kLower === 'logdate') targetKey = 'LogDate';
+                    else if (kLower === 'action') targetKey = 'Action';
+                    else if (kLower === 'entityname') targetKey = 'EntityName';
+                    else if (kLower === 'entityid') targetKey = 'EntityID';
+                    else if (kLower === 'details') targetKey = 'Details';
+                    else if (kLower === 'ipaddress') targetKey = 'IPAddress';
+                    else if (kLower === 'title') targetKey = 'Title';
+                    else if (kLower === 'message') targetKey = 'Message';
+                    else if (kLower === 'isread') targetKey = 'IsRead';
+                    else if (kLower === 'shippingaddress') targetKey = 'ShippingAddress';
+                    else if (kLower === 'notes') targetKey = 'Notes';
+
+                    normalized[targetKey] = row[key];
+                }
+                return normalized;
+            });
+
+            return {
+                recordset,
+                rowsAffected: [res.rowCount || 0]
+            };
+        }
+    }
+
+    const pgAdapterPool = {
+        request: () => new PgRequestWrapper()
+    };
+
+    poolPromise = Promise.resolve(pgAdapterPool);
+
+} else {
+    // Local MSSQL Database Fallback
+    const mssql = require('mssql');
+    sql = mssql;
+    const dbConfig = {
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        server: process.env.DB_SERVER || 'localhost',
+        database: process.env.DB_DATABASE || 'ThreadTrack',
+        options: {
+            trustServerCertificate: true
+        }
+    };
+
+    poolPromise = new mssql.ConnectionPool(dbConfig)
+        .connect()
+        .then(pool => {
+            console.log('✅ Connected to local MSSQL Database');
+            return pool;
+        })
+        .catch(err => {
+            console.error('❌ Database Connection Failed: ', err);
+            throw err;
+        });
+}
 
 module.exports = {
     sql,
