@@ -39,6 +39,14 @@ if (neonUrl) {
             // Convert MSSQL OUTPUT INSERTED.ColName to RETURNING ColName
             sqlStr = sqlStr.replace(/OUTPUT\s+INSERTED\.(\w+)/gi, 'RETURNING "$1"');
 
+            // Convert MSSQL ISNULL(a, b) to COALESCE(a, b)
+            sqlStr = sqlStr.replace(/ISNULL\(/gi, 'COALESCE(');
+
+            // Convert MSSQL (SELECT ... FOR JSON PATH) to PostgreSQL json_agg subquery
+            sqlStr = sqlStr.replace(/\(\s*SELECT\s+MaterialID\s+FROM\s+ProductMaterials\s+(\w+)\s+WHERE\s+([^)]+)\s+FOR\s+JSON\s+PATH\s*\)/gi,
+                '(SELECT json_agg(json_build_object(\'MaterialID\', $1.materialid)) FROM productmaterials $1 WHERE $2)'
+            );
+
             // Replace @paramName with $1, $2, etc.
             this.inputs.forEach((inp) => {
                 const regex = new RegExp(`@${inp.name}\\b`, 'gi');
@@ -98,6 +106,14 @@ if (neonUrl) {
                     else if (kLower === 'isread') targetKey = 'IsRead';
                     else if (kLower === 'shippingaddress') targetKey = 'ShippingAddress';
                     else if (kLower === 'notes') targetKey = 'Notes';
+                    else if (kLower === 'materialids') {
+                        targetKey = 'MaterialIDs';
+                        // If materialids is a JSON array string from pg, convert to JSON string matching MSSQL format
+                        if (typeof row[key] === 'object' && row[key] !== null) {
+                            normalized[targetKey] = JSON.stringify(row[key]);
+                            continue;
+                        }
+                    }
 
                     normalized[targetKey] = row[key];
                 }
