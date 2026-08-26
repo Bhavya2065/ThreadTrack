@@ -5,7 +5,7 @@ echo Starting ThreadTrack Services...
 start cmd /k "cd backend-node && npm run dev"
 
 :: Start Python Backend
-start cmd /k "cd backend-python && venn\Scripts\activate && python main.py"
+start cmd /k "cd backend-python && venv\Scripts\activate && python main.py"
 
 :: Start Mobile (Expo)
 start cmd /k "cd mobile && npx expo start"

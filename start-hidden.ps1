@@ -14,7 +14,7 @@ Start-Process powershell -ArgumentList "-Command cd backend-node; npm run dev" `
 
 # Start Python Backend
 Write-Host "Launching Python Backend..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-Command cd backend-python; .\venn\Scripts\activate; python main.py" `
+Start-Process powershell -ArgumentList "-Command cd backend-python; .\venv\Scripts\activate; python main.py" `
     -WindowStyle Hidden `
     -WorkingDirectory $root `
     -RedirectStandardOutput "$root\python-log.txt" `

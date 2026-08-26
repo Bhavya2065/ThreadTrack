@@ -8,7 +8,7 @@ Start-Process powershell -ArgumentList "-NoExit -Command 'cd backend-node; npm r
 
 # Start Python Backend
 Write-Host "Starting Python Backend..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit -Command 'cd backend-python; .\venn\Scripts\activate; python main.py'"
+Start-Process powershell -ArgumentList "-NoExit -Command 'cd backend-python; .\venv\Scripts\activate; python main.py'"
 
 # Start Mobile (Expo)
 Write-Host "Starting Mobile App (Expo)..." -ForegroundColor Yellow
