@@ -255,9 +255,9 @@ export default function InventoryManagement() {
                                             </View>
                                         </View>
                                          <View style={styles.metaRow}>
-                                             <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>{m.TypeName || 'General'} • In Stock: {m.CurrentStock.toFixed(2)} {m.Unit}</Text>
+                                             <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13 }}>{m.TypeName || 'General'} • In Stock: {(Number(m.CurrentStock) || 0).toFixed(2)} {m.Unit}</Text>
                                          </View>
-                                        <Text style={{ color: theme.colors.error, fontSize: 13, marginTop: 4 }}>Reserve: {m.ReservedStock.toFixed(2)}</Text>
+                                        <Text style={{ color: theme.colors.error, fontSize: 13, marginTop: 4 }}>Reserve: {(Number(m.ReservedStock) || 0).toFixed(2)}</Text>
                                     </View>
                                     <View style={styles.actionRow}>
                                         <IconButton icon={() => <Plus size={22} color={theme.colors.primary}/>} onPress={() => { setStockForm({ id: m.MaterialID, name: m.Name, amount: '' }); setIsStockModalVisible(true); }} size={22} style={{ margin: 0 }}/>
