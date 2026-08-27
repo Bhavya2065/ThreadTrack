@@ -36,8 +36,12 @@ if (neonUrl) {
             let sqlStr = queryText;
             const values = [];
 
-            // Convert MSSQL OUTPUT INSERTED.ColName to RETURNING ColName
-            sqlStr = sqlStr.replace(/OUTPUT\s+INSERTED\.(\w+)/gi, 'RETURNING "$1"');
+            // Convert MSSQL OUTPUT INSERTED.ColName to PostgreSQL RETURNING "ColName" at the end of the query
+            let returningCol = null;
+            sqlStr = sqlStr.replace(/OUTPUT\s+INSERTED\.(\w+)/gi, (match, col) => {
+                returningCol = col;
+                return '';
+            });
 
             // Convert MSSQL (SELECT ... FOR JSON PATH) to PostgreSQL json_agg subquery
             sqlStr = sqlStr.replace(/\(\s*SELECT\s+MaterialID\s+FROM\s+ProductMaterials\s+(\w+)\s+WHERE\s+([^)]+)\s+FOR\s+JSON\s+PATH\s*\)/gi,
@@ -52,6 +56,10 @@ if (neonUrl) {
                     sqlStr = sqlStr.replace(regex, `$${values.length}`);
                 }
             });
+
+            if (returningCol) {
+                sqlStr += ` RETURNING "${returningCol}"`;
+            }
 
             // Convert MSSQL SELECT TOP N to LIMIT N
             if (/SELECT\s+TOP\s+(\d+)/i.test(sqlStr)) {
