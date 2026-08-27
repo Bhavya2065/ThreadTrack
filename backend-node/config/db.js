@@ -58,7 +58,7 @@ if (neonUrl) {
             });
 
             if (returningCol) {
-                sqlStr += ` RETURNING "${returningCol}"`;
+                sqlStr += ` RETURNING ${returningCol}`;
             }
 
             // Convert MSSQL SELECT TOP N to LIMIT N
