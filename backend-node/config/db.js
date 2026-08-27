@@ -63,10 +63,14 @@ if (neonUrl) {
                 }
             }
 
-            // Convert DATEADD(day, N, GETDATE()/GETUTCDATE()) to PostgreSQL (CURRENT_TIMESTAMP +/- INTERVAL 'N days')
+            // Convert DATEADD(day, N, expr) to PostgreSQL (expr +/- INTERVAL 'N days')
             sqlStr = sqlStr.replace(/DATEADD\s*\(\s*day\s*,\s*(-?\d+)\s*,\s*(GETDATE\(\)|GETUTCDATE\(\))\s*\)/gi, (match, p1) => {
                 const n = parseInt(p1);
                 return n >= 0 ? `(CURRENT_TIMESTAMP + INTERVAL '${n} days')` : `(CURRENT_TIMESTAMP - INTERVAL '${Math.abs(n)} days')`;
+            });
+            sqlStr = sqlStr.replace(/DATEADD\s*\(\s*day\s*,\s*(-?\d+)\s*,\s*([a-zA-Z0-9_.]+)\s*\)/gi, (match, p1, p2) => {
+                const n = parseInt(p1);
+                return n >= 0 ? `(${p2} + INTERVAL '${n} days')` : `(${p2} - INTERVAL '${Math.abs(n)} days')`;
             });
 
             // Replace MSSQL functions with Postgres equivalents
