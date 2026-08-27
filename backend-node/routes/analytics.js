@@ -69,7 +69,7 @@ router.get('/production-summary', auth(['Admin', 'Super Admin']), async (req, re
 
         // 1. Weekly Production Output (Last 7 days - ensuring all days are present)
         const weeklyResult = await pool.request().query(`
-            WITH Last7Days AS (
+            WITH RECURSIVE Last7Days AS (
                 SELECT CAST(DATEADD(day, -6, GETUTCDATE()) AS DATE) as date
                 UNION ALL
                 SELECT DATEADD(day, 1, date)
