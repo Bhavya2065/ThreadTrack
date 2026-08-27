@@ -163,7 +163,7 @@ export default function AdminInventory() {
                                                         ellipsizeMode="tail"
                                                         style={[styles.inventoryName, isLow && { color: theme.colors.error }]}
                                                     >
-                                                        {item.Name}
+                                                        {item.name}
                                                     </Text>
                                                 </View>
                                                 <Text
