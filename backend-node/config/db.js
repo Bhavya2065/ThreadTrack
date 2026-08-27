@@ -73,6 +73,12 @@ if (neonUrl) {
                 return n >= 0 ? `(${p2} + INTERVAL '${n} days')` : `(${p2} - INTERVAL '${Math.abs(n)} days')`;
             });
 
+            // Convert MSSQL BIT comparisons (= 1 / = 0) to Postgres BOOLEAN (= true / = false)
+            sqlStr = sqlStr.replace(/\bIsPublic\s*=\s*1\b/gi, 'IsPublic = true');
+            sqlStr = sqlStr.replace(/\bIsPublic\s*=\s*0\b/gi, 'IsPublic = false');
+            sqlStr = sqlStr.replace(/\bIsActive\s*=\s*1\b/gi, 'IsActive = true');
+            sqlStr = sqlStr.replace(/\bIsActive\s*=\s*0\b/gi, 'IsActive = false');
+
             // Replace MSSQL functions with Postgres equivalents
             sqlStr = sqlStr.replace(/GETDATE\(\)/gi, 'CURRENT_TIMESTAMP');
             sqlStr = sqlStr.replace(/GETUTCDATE\(\)/gi, 'CURRENT_TIMESTAMP');
@@ -87,6 +93,8 @@ if (neonUrl) {
                     let targetKey = key;
                     if (kLower === 'userid') targetKey = 'UserID';
                     else if (kLower === 'username') targetKey = 'Username';
+                    else if (kLower === 'name') targetKey = 'Name';
+                    else if (kLower === 'rolename' || kLower === 'role_name') targetKey = 'RoleName';
                     else if (kLower === 'passwordhash') targetKey = 'PasswordHash';
                     else if (kLower === 'role') targetKey = 'Role';
                     else if (kLower === 'createdat') targetKey = 'CreatedAt';

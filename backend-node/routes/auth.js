@@ -8,9 +8,12 @@ const { logAction } = require('../utils/auditLogger');
 // Fetch Public Roles for Signup
 router.get('/roles', async (req, res) => {
     try {
-        const pool = await poolPromise;
-        const result = await pool.request().query("SELECT Role_name FROM Roles WHERE IsPublic = 1");
-        res.json(result.recordset.map(r => r.Role_name));
+        const isNeon = !!process.env.NEON_DATABASE_URL;
+        const queryStr = isNeon
+            ? "SELECT RoleName, rolename FROM Roles WHERE IsPublic = true"
+            : "SELECT RoleName FROM Roles WHERE IsPublic = 1";
+        const result = await pool.request().query(queryStr);
+        res.json(result.recordset.map(r => r.RoleName || r.rolename || r.Role_name));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
