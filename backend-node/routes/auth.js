@@ -65,9 +65,10 @@ router.post('/register', async (req, res) => {
         const result = await pool.request()
             .input('username', sql.NVarChar, username)
             .input('password', sql.NVarChar, hashedPassword)
+            .input('role', sql.NVarChar, requestedRole)
             .input('status', sql.NVarChar, initialStatus)
             .input('requestedRole', sql.NVarChar, requestedRole)
-            .query('INSERT INTO Users (Username, PasswordHash, Role, Status, RequestedRole, RoleID) OUTPUT INSERTED.UserID VALUES (@username, @password, NULL, @status, @requestedRole, NULL)');
+            .query('INSERT INTO Users (Username, PasswordHash, Role, Status, RequestedRole, RoleID) OUTPUT INSERTED.UserID VALUES (@username, @password, @role, @status, @requestedRole, NULL)');
 
         const newUserId = result.recordset[0].UserID;
 
