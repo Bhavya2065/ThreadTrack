@@ -8,6 +8,7 @@ const { logAction } = require('../utils/auditLogger');
 // Fetch Public Roles for Signup
 router.get('/roles', async (req, res) => {
     try {
+        const pool = await poolPromise;
         const isNeon = !!process.env.NEON_DATABASE_URL;
         const queryStr = isNeon
             ? "SELECT RoleName, rolename FROM Roles WHERE IsPublic = true"
