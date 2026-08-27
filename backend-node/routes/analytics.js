@@ -68,21 +68,8 @@ router.get('/production-summary', auth(['Admin', 'Super Admin']), async (req, re
         });
 
         // 1. Weekly Production Output (Last 7 days - ensuring all days are present)
-        const isNeon = !!process.env.NEON_DATABASE_URL;
-        const weeklyQuery = isNeon ? `
-            SELECT 
-                d.date::date as date, 
-                COALESCE(SUM(pl.QuantityProduced), 0) as total
-            FROM generate_series(
-                (CURRENT_DATE - INTERVAL '6 days')::date, 
-                CURRENT_DATE::date, 
-                '1 day'::interval
-            ) AS d(date)
-            LEFT JOIN ProductionLogs pl ON CAST(pl.LogDate AS DATE) = d.date::date
-            GROUP BY d.date
-            ORDER BY d.date ASC
-        ` : `
-            WITH Last7Days AS (
+        const weeklyResult = await pool.request().query(`
+            WITH RECURSIVE Last7Days AS (
                 SELECT CAST(DATEADD(day, -6, GETUTCDATE()) AS DATE) as date
                 UNION ALL
                 SELECT DATEADD(day, 1, date)
@@ -96,9 +83,7 @@ router.get('/production-summary', auth(['Admin', 'Super Admin']), async (req, re
             LEFT JOIN ProductionLogs pl ON CAST(pl.LogDate AS DATE) = d.date
             GROUP BY d.date
             ORDER BY d.date ASC
-        `;
-
-        const weeklyResult = await pool.request().query(weeklyQuery);
+        `);
 
         // 2. Worker Productivity (Total products logged per worker)
         const workerResult = await pool.request().query(`

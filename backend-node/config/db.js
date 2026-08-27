@@ -83,11 +83,6 @@ if (neonUrl) {
                     let targetKey = key;
                     if (kLower === 'userid') targetKey = 'UserID';
                     else if (kLower === 'username') targetKey = 'Username';
-                    else if (kLower === 'name') targetKey = 'Name';
-                    else if (kLower === 'producedquantity') targetKey = 'ProducedQuantity';
-                    else if (kLower === 'buyername') targetKey = 'BuyerName';
-                    else if (kLower === 'workername') targetKey = 'WorkerName';
-                    else if (kLower === 'reservedstock') targetKey = 'ReservedStock';
                     else if (kLower === 'passwordhash') targetKey = 'PasswordHash';
                     else if (kLower === 'role') targetKey = 'Role';
                     else if (kLower === 'createdat') targetKey = 'CreatedAt';
