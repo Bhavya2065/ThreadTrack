@@ -11,10 +11,10 @@ router.get('/roles', async (req, res) => {
         const pool = await poolPromise;
         const isNeon = !!process.env.NEON_DATABASE_URL;
         const queryStr = isNeon
-            ? "SELECT RoleName FROM Roles WHERE IsPublic = true"
-            : "SELECT RoleName FROM Roles WHERE IsPublic = 1";
+            ? 'SELECT role_name as "RoleName" FROM roles WHERE ispublic = true'
+            : 'SELECT RoleName FROM Roles WHERE IsPublic = 1';
         const result = await pool.request().query(queryStr);
-        res.json(result.recordset.map(r => r.RoleName || r.rolename || r.Role_name));
+        res.json(result.recordset.map(r => r.RoleName || r.role_name || r.rolename));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
