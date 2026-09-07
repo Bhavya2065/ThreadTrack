@@ -136,8 +136,8 @@ export default function AdminInventory() {
                                     <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 8, fontWeight: '500', textAlign: 'center' }}>
                                         Add materials in the management section to get started.
                                     </Text>
-                                    <Button 
-                                        mode="contained" 
+                                    <Button
+                                        mode="contained"
                                         onPress={() => router.push('/admin/inventory_mgmt')}
                                         style={{ marginTop: 24, borderRadius: 12 }}
                                         contentStyle={{ paddingVertical: 4 }}
@@ -150,8 +150,8 @@ export default function AdminInventory() {
                                 materials.map((item, index) => {
                                     const isLow = item.CurrentStock <= item.MinimumRequired;
                                     return (
-                                        <TouchableOpacity 
-                                            key={item.MaterialID || index} 
+                                        <TouchableOpacity
+                                            key={item.MaterialID || index}
                                             activeOpacity={0.7}
                                             onPress={() => router.push('/admin/inventory_mgmt')}
                                         >
@@ -163,7 +163,7 @@ export default function AdminInventory() {
                                                         ellipsizeMode="tail"
                                                         style={[styles.inventoryName, isLow && { color: theme.colors.error }]}
                                                     >
-                                                        {item.name}
+                                                        {item.Name}
                                                     </Text>
                                                 </View>
                                                 <Text
