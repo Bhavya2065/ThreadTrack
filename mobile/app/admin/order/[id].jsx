@@ -93,8 +93,10 @@ export default function OrderDetails() {
             </View>
         </View>);
     }
-    const rawProgress = order.ProducedQuantity / order.Quantity;
-    const progress = Math.min(rawProgress, 1);
+    const producedQty = Number(order.ProducedQuantity) || 0;
+    const totalQty = Number(order.Quantity) || 1;
+    const rawProgress = totalQty > 0 ? producedQty / totalQty : 0;
+    const progress = Math.min(Math.max(rawProgress, 0), 1);
     const isLargeScreen = Platform.OS === 'web' && width >= 768;
     const getStatusColors = (status) => {
         switch (status) {
@@ -207,7 +209,7 @@ export default function OrderDetails() {
                                 </View>
                                 <ProgressBar progress={progress} color={theme.colors.primary} style={styles.progressBar} />
                                 <Text style={styles.progressSub}>
-                                    {Math.min(order.ProducedQuantity, order.Quantity)} / {order.Quantity} units completed
+                                    {Math.min(producedQty, Number(order.Quantity) || 0)} / {order.Quantity || 0} units completed
                                 </Text>
                             </View>
                         </GlassCard>
