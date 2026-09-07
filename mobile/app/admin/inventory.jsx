@@ -8,6 +8,7 @@ import { reportExporter } from '../../src/utils/reportExporter';
 import { createStyles } from '../../assets/Styles/AdminInventoryStyles';
 import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
+import { SkeletonLoader } from '../../src/components/SkeletonLoader';
 import { Tokens } from '../../src/theme/tokens';
 
 export default function AdminInventory() {
@@ -51,8 +52,28 @@ export default function AdminInventory() {
                         <Appbar.Content title="Inventory" titleStyle={styles.appbarTitle} />
                     </Appbar.Header>
                 )}
-                <View style={{ flex: 1, padding: 16 }}>
-                    <GlassCard style={{ height: 300, opacity: 0.5 }}><Text style={{ color: Tokens.colors.textMuted }}>Loading stocks...</Text></GlassCard>
+                <View style={styles.mainContent}>
+                    <View style={styles.headerRow}>
+                        <SkeletonLoader width={140} height={24} borderRadius={6} />
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <SkeletonLoader width={64} height={32} borderRadius={8} />
+                            <SkeletonLoader width={64} height={32} borderRadius={8} />
+                        </View>
+                    </View>
+                    <GlassCard style={{ padding: 20 }}>
+                        {[1, 2, 3, 4, 5].map((key) => (
+                            <View key={key} style={{ marginBottom: 20 }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                        <SkeletonLoader width={22} height={22} borderRadius={6} />
+                                        <SkeletonLoader width={100 + (key % 3) * 40} height={18} borderRadius={4} />
+                                    </View>
+                                    <SkeletonLoader width={90} height={16} borderRadius={4} />
+                                </View>
+                                <SkeletonLoader width="100%" height={10} borderRadius={5} />
+                            </View>
+                        ))}
+                    </GlassCard>
                 </View>
             </View>
         );
