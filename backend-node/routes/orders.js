@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { poolPromise, sql } = require('../config/db');
+const { query, withTransaction } = require('../config/db');
 const auth = require('../middleware/authMiddleware');
 const fs = require('fs');
 const path = require('path');
@@ -16,20 +16,19 @@ const logError = (err, route) => {
 // Get all Orders (Admin and Worker view)
 router.get('/', auth(['Admin', 'Worker']), async (req, res) => {
     try {
-        const pool = await poolPromise;
-        const result = await pool.request().query(`
-            SELECT 
-                o.*, 
-                p.ProductName, 
-                u.Username as BuyerName,
-                COALESCE((SELECT SUM(QuantityProduced) FROM ProductionLogs WHERE OrderID = o.OrderID), 0) as ProducedQuantity
-            FROM Orders o 
-            JOIN Products p ON o.ProductID = p.ProductID 
-            JOIN Users u ON o.BuyerID = u.UserID
-            ${req.user.role === 'Worker' ? "WHERE o.Status = 'Manufacturing'" : ""}
-            ORDER BY o.OrderDate DESC
+        const result = await query(`
+            SELECT
+                o.*,
+                p.productname AS "ProductName",
+                u.username AS "BuyerName",
+                COALESCE((SELECT SUM(quantityproduced) FROM productionlogs WHERE orderid = o.orderid), 0)::int AS "ProducedQuantity"
+            FROM orders o
+            JOIN products p ON o.productid = p.productid
+            JOIN users u ON o.buyerid = u.userid
+            ${req.user.role === 'Worker' ? "WHERE o.status = 'Manufacturing'" : ""}
+            ORDER BY o.orderdate DESC
         `);
-        res.json(result.recordset);
+        res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -42,28 +41,28 @@ router.get('/:id', auth(['Admin', 'Worker', 'Buyer']), async (req, res) => {
         if (isNaN(parseInt(id))) {
             return res.status(400).json({ error: 'Invalid Order ID' });
         }
-        const pool = await poolPromise;
 
         // Fetch order details
-        const orderResult = await pool.request()
-            .input('id', sql.Int, id)
-            .query(`
-                SELECT 
-                    o.*, 
-                    p.ProductName, 
-                    u.Username as BuyerName,
-                    COALESCE((SELECT SUM(QuantityProduced) FROM ProductionLogs WHERE OrderID = o.OrderID), 0) as ProducedQuantity
-                FROM Orders o 
-                JOIN Products p ON o.ProductID = p.ProductID 
-                JOIN Users u ON o.BuyerID = u.UserID
-                WHERE o.OrderID = @id
-            `);
+        const orderResult = await query(
+            `
+                SELECT
+                    o.*,
+                    p.productname AS "ProductName",
+                    u.username AS "BuyerName",
+                    COALESCE((SELECT SUM(quantityproduced) FROM productionlogs WHERE orderid = o.orderid), 0)::int AS "ProducedQuantity"
+                FROM orders o
+                JOIN products p ON o.productid = p.productid
+                JOIN users u ON o.buyerid = u.userid
+                WHERE o.orderid = $1
+            `,
+            [id]
+        );
 
-        if (orderResult.recordset.length === 0) {
+        if (orderResult.rows.length === 0) {
             return res.status(404).json({ error: 'Order not found' });
         }
 
-        const order = orderResult.recordset[0];
+        const order = orderResult.rows[0];
 
         // Authorization check for Buyers
         if (req.user.role === 'Buyer' && order.BuyerID !== req.user.id) {
@@ -71,21 +70,22 @@ router.get('/:id', auth(['Admin', 'Worker', 'Buyer']), async (req, res) => {
         }
 
         // Fetch production timeline
-        const logsResult = await pool.request()
-            .input('id', sql.Int, id)
-            .query(`
-                SELECT 
-                    pl.*, 
-                    u.Username as WorkerName 
-                FROM ProductionLogs pl
-                JOIN Users u ON pl.WorkerID = u.UserID
-                WHERE pl.OrderID = @id
-                ORDER BY pl.LogDate DESC
-            `);
+        const logsResult = await query(
+            `
+                SELECT
+                    pl.*,
+                    u.username AS "WorkerName"
+                FROM productionlogs pl
+                JOIN users u ON pl.workerid = u.userid
+                WHERE pl.orderid = $1
+                ORDER BY pl.logdate DESC
+            `,
+            [id]
+        );
 
         res.json({
             ...order,
-            timeline: logsResult.recordset
+            timeline: logsResult.rows
         });
     } catch (err) {
         logError(err, `GET /orders/${req.params.id}`);
@@ -112,11 +112,7 @@ router.post('/', auth(['Buyer']), async (req, res) => {
             return res.status(400).json({ error: 'At least one product and a positive quantity are required' });
         }
 
-        const pool = await poolPromise;
-        const transaction = new sql.Transaction(pool);
-        await transaction.begin();
-
-        try {
+        await withTransaction(async (tx) => {
             for (const item of orderItems) {
                 const { productId: pId, quantity: qty } = item;
 
@@ -125,68 +121,70 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                 }
 
                 // Validation for Raw Material Capacity (Consistency Check)
-                const materialsCheck = await transaction.request()
-                    .input('productId', sql.Int, pId)
-                    .query(`
+                const materialsCheck = await tx.query(
+                    `
                         WITH Reserved AS (
-                             SELECT pm_inner.MaterialID, SUM((o.Quantity - COALESCE(prod.ProducedQty, 0)) * p_inner.MaterialQuantityPerUnit) as ReservedStock
-                             FROM Orders o
-                             JOIN Products p_inner ON o.ProductID = p_inner.ProductID
-                             JOIN ProductMaterials pm_inner ON p_inner.ProductID = pm_inner.ProductID
+                             SELECT pm_inner.materialid, SUM((o.quantity - COALESCE(prod.producedqty, 0)) * p_inner.materialquantityperunit) AS ReservedStock
+                             FROM orders o
+                             JOIN products p_inner ON o.productid = p_inner.productid
+                             JOIN productmaterials pm_inner ON p_inner.productid = pm_inner.productid
                              LEFT JOIN (
-                                 SELECT OrderID, SUM(QuantityProduced) as ProducedQty
-                                 FROM ProductionLogs
-                                 GROUP BY OrderID
-                             ) prod ON o.OrderID = prod.OrderID
-                             WHERE o.Status NOT IN ('Completed', 'Cancelled', 'Inquiry')
-                             GROUP BY pm_inner.MaterialID
+                                 SELECT orderid, SUM(quantityproduced) AS producedqty
+                                 FROM productionlogs
+                                 GROUP BY orderid
+                             ) prod ON o.orderid = prod.orderid
+                             WHERE o.status NOT IN ('Completed', 'Cancelled', 'Inquiry')
+                             GROUP BY pm_inner.materialid
                         )
-                        SELECT 
-                            p.MaterialQuantityPerUnit, 
-                            rm.CurrentStock, 
-                            p.ProductName,
-                            rm.Name as MaterialName,
-                            COALESCE(r.ReservedStock, 0) as ReservedStock
-                        FROM Products p
-                        JOIN ProductMaterials pm ON p.ProductID = pm.ProductID
-                        JOIN RawMaterials rm ON pm.MaterialID = rm.MaterialID
-                        LEFT JOIN Reserved r ON rm.MaterialID = r.MaterialID
-                        WHERE p.ProductID = @productId
-                    `);
+                        SELECT
+                            p.materialquantityperunit AS "MaterialQuantityPerUnit",
+                            rm.currentstock AS "CurrentStock",
+                            p.productname AS "ProductName",
+                            rm.name AS "MaterialName",
+                            COALESCE(r.reservedstock, 0) AS "ReservedStock"
+                        FROM products p
+                        JOIN productmaterials pm ON p.productid = pm.productid
+                        JOIN rawmaterials rm ON pm.materialid = rm.materialid
+                        LEFT JOIN Reserved r ON rm.materialid = r.materialid
+                        WHERE p.productid = $1
+                    `,
+                    [pId]
+                );
 
-                if (materialsCheck.recordset.length === 0) {
+                if (materialsCheck.rows.length === 0) {
                     // Fallback for Products without ProductMaterials
-                    const fallbackResult = await transaction.request()
-                        .input('productId', sql.Int, pId)
-                        .query(`
-                            SELECT 
-                                p.MaterialQuantityPerUnit, 
-                                rm.CurrentStock, 
-                                p.ProductName,
-                                rm.Name as MaterialName,
+                    const fallbackResult = await tx.query(
+                        `
+                            SELECT
+                                p.materialquantityperunit AS "MaterialQuantityPerUnit",
+                                rm.currentstock AS "CurrentStock",
+                                p.productname AS "ProductName",
+                                rm.name AS "MaterialName",
                                 COALESCE((
-                                    SELECT SUM((o.Quantity - COALESCE(prod.ProducedQty, 0)) * p_inner.MaterialQuantityPerUnit)
-                                    FROM Orders o
-                                    JOIN Products p_inner ON o.ProductID = p_inner.ProductID
+                                    SELECT SUM((o.quantity - COALESCE(prod.producedqty, 0)) * p_inner.materialquantityperunit)
+                                    FROM orders o
+                                    JOIN products p_inner ON o.productid = p_inner.productid
                                     LEFT JOIN (
-                                        SELECT OrderID, SUM(QuantityProduced) as ProducedQty
-                                        FROM ProductionLogs
-                                        GROUP BY OrderID
-                                    ) prod ON o.OrderID = prod.OrderID
-                                    WHERE p_inner.BaseMaterialID = rm.MaterialID
-                                    AND o.Status NOT IN ('Completed', 'Cancelled', 'Inquiry')
-                                ), 0) as ReservedStock
-                            FROM Products p
-                            JOIN RawMaterials rm ON p.BaseMaterialID = rm.MaterialID
-                            WHERE p.ProductID = @productId
-                        `);
-                    if (fallbackResult.recordset.length === 0) {
+                                        SELECT orderid, SUM(quantityproduced) AS producedqty
+                                        FROM productionlogs
+                                        GROUP BY orderid
+                                    ) prod ON o.orderid = prod.orderid
+                                    WHERE p_inner.basematerialid = rm.materialid
+                                    AND o.status NOT IN ('Completed', 'Cancelled', 'Inquiry')
+                                ), 0) AS "ReservedStock"
+                            FROM products p
+                            JOIN rawmaterials rm ON p.basematerialid = rm.materialid
+                            WHERE p.productid = $1
+                        `,
+                        [pId]
+                    );
+                    if (fallbackResult.rows.length === 0) {
                         throw new Error(`Product or base material not found for item: ${pId}`);
                     }
-                    materialsCheck.recordset = fallbackResult.recordset;
+                    materialsCheck.rows = fallbackResult.rows;
                 }
 
-                for (const material of materialsCheck.recordset) {
+                for (const material of materialsCheck.rows) {
                     const { MaterialQuantityPerUnit, CurrentStock, ReservedStock, ProductName, MaterialName } = material;
                     const netStock = CurrentStock - ReservedStock;
                     const maxUnits = Math.floor(netStock / MaterialQuantityPerUnit);
@@ -196,14 +194,12 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                     }
                 }
 
-                const orderResult = await transaction.request()
-                    .input('buyerId', sql.Int, buyerId)
-                    .input('productId', sql.Int, pId)
-                    .input('quantity', sql.Int, qty)
-                    .input('status', sql.NVarChar, status || 'Pending')
-                    .query('INSERT INTO Orders (BuyerID, ProductID, Quantity, Status) OUTPUT INSERTED.OrderID VALUES (@buyerId, @productId, @quantity, @status)');
+                const orderResult = await tx.query(
+                    'INSERT INTO orders (buyerid, productid, quantity, status) VALUES ($1, $2, $3, $4) RETURNING orderid AS "OrderID"',
+                    [buyerId, pId, qty, status || 'Pending']
+                );
 
-                const newOrderId = orderResult.recordset[0].OrderID;
+                const newOrderId = orderResult.rows[0].OrderID;
 
                 // Log order creation
                 await logAction({
@@ -220,13 +216,9 @@ router.post('/', auth(['Buyer']), async (req, res) => {
                     ipAddress: req.ip
                 });
             }
+        });
 
-            await transaction.commit();
-            res.status(201).json({ message: 'Order(s) created successfully' });
-        } catch (err) {
-            await transaction.rollback();
-            throw err;
-        }
+        res.status(201).json({ message: 'Order(s) created successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -242,20 +234,18 @@ router.put('/:id', auth(['Admin']), async (req, res) => {
             return res.status(400).json({ error: 'Status is required' });
         }
 
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .input('status', sql.NVarChar, status)
-            .input('notes', sql.NVarChar, completionNotes || null)
-            .query(`
-                UPDATE Orders 
-                SET Status = @status, 
-                    CompletionNotes = @notes,
-                    CompletionDate = CASE WHEN @status = 'Completed' THEN GETUTCDATE() ELSE CompletionDate END
-                WHERE OrderID = @id
-            `);
+        const result = await query(
+            `
+                UPDATE orders
+                SET status = $1,
+                    completionnotes = $2,
+                    completiondate = CASE WHEN $1 = 'Completed' THEN NOW() ELSE completiondate END
+                WHERE orderid = $3
+            `,
+            [status, completionNotes || null, id]
+        );
 
-        if (result.rowsAffected[0] === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Order not found' });
         }
 
@@ -276,17 +266,18 @@ router.put('/:id', auth(['Admin']), async (req, res) => {
 
         // Send Push Notification to Buyer
         try {
-            const buyerInfo = await pool.request()
-                .input('orderId', sql.Int, id)
-                .query(`
-                    SELECT u.PushToken, p.ProductName 
-                    FROM Orders o 
-                    JOIN Users u ON o.BuyerID = u.UserID 
-                    JOIN Products p ON o.ProductID = p.ProductID 
-                    WHERE o.OrderID = @orderId
-                `);
+            const buyerInfo = await query(
+                `
+                    SELECT u.pushtoken AS "PushToken", p.productname AS "ProductName"
+                    FROM orders o
+                    JOIN users u ON o.buyerid = u.userid
+                    JOIN products p ON o.productid = p.productid
+                    WHERE o.orderid = $1
+                `,
+                [id]
+            );
 
-            const buyer = buyerInfo.recordset[0];
+            const buyer = buyerInfo.rows[0];
             if (buyer && buyer.PushToken) {
                 await sendPushNotification(
                     buyer.PushToken,
@@ -309,12 +300,12 @@ router.put('/:id', auth(['Admin']), async (req, res) => {
 router.put('/:id/approve', auth(['Admin']), async (req, res) => {
     try {
         const { id } = req.params;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .query("UPDATE Orders SET Status = 'Approved' WHERE OrderID = @id AND Status IN ('Pending', 'Inquiry')");
+        const result = await query(
+            "UPDATE orders SET status = 'Approved' WHERE orderid = $1 AND status IN ('Pending', 'Inquiry')",
+            [id]
+        );
 
-        if (result.rowsAffected[0] === 0) {
+        if (result.rowCount === 0) {
             return res.status(400).json({ error: 'Order not found or not in valid state for approval' });
         }
 
@@ -337,12 +328,12 @@ router.put('/:id/approve', auth(['Admin']), async (req, res) => {
 router.put('/:id/manufacture', auth(['Admin']), async (req, res) => {
     try {
         const { id } = req.params;
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .query("UPDATE Orders SET Status = 'Manufacturing' WHERE OrderID = @id AND Status = 'Approved'");
+        const result = await query(
+            "UPDATE orders SET status = 'Manufacturing' WHERE orderid = $1 AND status = 'Approved'",
+            [id]
+        );
 
-        if (result.rowsAffected[0] === 0) {
+        if (result.rowCount === 0) {
             return res.status(400).json({ error: 'Order not found or must be Approved first' });
         }
 
@@ -366,18 +357,18 @@ router.delete('/:id', auth(['Buyer', 'Admin']), async (req, res) => {
     try {
         const { id } = req.params;
         const { reason } = req.body; // Accept reason from body
-        const pool = await poolPromise;
 
         // Fetch order to check status and ownership
-        const orderResult = await pool.request()
-            .input('id', sql.Int, id)
-            .query('SELECT BuyerID, Status FROM Orders WHERE OrderID = @id');
+        const orderResult = await query(
+            'SELECT buyerid AS "BuyerID", status AS "Status" FROM orders WHERE orderid = $1',
+            [id]
+        );
 
-        if (orderResult.recordset.length === 0) {
+        if (orderResult.rows.length === 0) {
             return res.status(404).json({ error: 'Order not found' });
         }
 
-        const order = orderResult.recordset[0];
+        const order = orderResult.rows[0];
 
         if (req.user.role === 'Buyer') {
             if (order.BuyerID !== req.user.id) {
@@ -390,11 +381,10 @@ router.delete('/:id', auth(['Buyer', 'Admin']), async (req, res) => {
         }
 
         // Soft delete for Admin (or Buyer) to preserve the reason
-        await pool.request()
-            .input('id', sql.Int, id)
-            .input('status', sql.NVarChar, 'Cancelled')
-            .input('notes', sql.NVarChar, reason || (req.user.role === 'Buyer' ? 'Cancelled by Buyer' : 'Rejected by Admin'))
-            .query('UPDATE Orders SET Status = @status, CompletionNotes = @notes WHERE OrderID = @id');
+        await query(
+            'UPDATE orders SET status = $1, completionnotes = $2 WHERE orderid = $3',
+            ['Cancelled', reason || (req.user.role === 'Buyer' ? 'Cancelled by Buyer' : 'Rejected by Admin'), id]
+        );
 
         // Log cancellation
         await logAction({
@@ -427,22 +417,22 @@ router.get('/buyer/:buyerId', auth(['Buyer', 'Admin']), async (req, res) => {
             return res.status(403).json({ error: 'Access denied. You can only view your own orders.' });
         }
 
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('buyerId', sql.Int, buyerId)
-            .query(`
-                SELECT 
-                    o.*, 
-                    p.ProductName, 
-                    u.Username as BuyerName,
-                    COALESCE((SELECT SUM(QuantityProduced) FROM ProductionLogs WHERE OrderID = o.OrderID), 0) as ProducedQuantity
-                FROM Orders o 
-                JOIN Products p ON o.ProductID = p.ProductID 
-                JOIN Users u ON o.BuyerID = u.UserID 
-                WHERE o.BuyerID = @buyerId 
-                ORDER BY o.OrderDate DESC
-            `);
-        res.json(result.recordset);
+        const result = await query(
+            `
+                SELECT
+                    o.*,
+                    p.productname AS "ProductName",
+                    u.username AS "BuyerName",
+                    COALESCE((SELECT SUM(quantityproduced) FROM productionlogs WHERE orderid = o.orderid), 0)::int AS "ProducedQuantity"
+                FROM orders o
+                JOIN products p ON o.productid = p.productid
+                JOIN users u ON o.buyerid = u.userid
+                WHERE o.buyerid = $1
+                ORDER BY o.orderdate DESC
+            `,
+            [buyerId]
+        );
+        res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

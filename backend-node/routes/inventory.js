@@ -1,34 +1,33 @@
 const express = require('express');
 const router = express.Router();
-const { poolPromise, sql } = require('../config/db');
+const { query, withTransaction } = require('../config/db');
 const auth = require('../middleware/authMiddleware');
 const { logAction } = require('../utils/auditLogger');
 
 // Get all Raw Materials (Available to all authenticated users)
 router.get('/materials', auth(), async (req, res) => {
     try {
-        const pool = await poolPromise;
-        const result = await pool.request().query(`
-            SELECT 
+        const result = await query(`
+            SELECT
                 rm.*,
-                mt.TypeName,
+                mt.typename AS "TypeName",
                 COALESCE((
-                    SELECT SUM((o.Quantity - COALESCE(prod.ProducedQty, 0)) * p.MaterialQuantityPerUnit)
-                    FROM Orders o
-                    JOIN Products p ON o.ProductID = p.ProductID
-                    JOIN ProductMaterials pm ON p.ProductID = pm.ProductID
+                    SELECT SUM((o.quantity - COALESCE(prod.producedqty, 0)) * p.materialquantityperunit)
+                    FROM orders o
+                    JOIN products p ON o.productid = p.productid
+                    JOIN productmaterials pm ON p.productid = pm.productid
                     LEFT JOIN (
-                        SELECT OrderID, SUM(QuantityProduced) as ProducedQty
-                        FROM ProductionLogs
-                        GROUP BY OrderID
-                    ) prod ON o.OrderID = prod.OrderID
-                    WHERE pm.MaterialID = rm.MaterialID
-                    AND o.Status NOT IN ('Completed', 'Cancelled', 'Inquiry')
-                ), 0) as ReservedStock
-            FROM RawMaterials rm
-            LEFT JOIN MaterialTypes mt ON rm.TypeID = mt.ID
+                        SELECT orderid, SUM(quantityproduced) AS producedqty
+                        FROM productionlogs
+                        GROUP BY orderid
+                    ) prod ON o.orderid = prod.orderid
+                    WHERE pm.materialid = rm.materialid
+                    AND o.status NOT IN ('Completed', 'Cancelled', 'Inquiry')
+                ), 0) AS "ReservedStock"
+            FROM rawmaterials rm
+            LEFT JOIN materialtypes mt ON rm.typeid = mt.id
         `);
-        res.json(result.recordset);
+        res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -40,26 +39,21 @@ router.put('/materials/:id', auth(['Admin']), async (req, res) => {
         const { id } = req.params;
         const { quantity, name, unit, minimumRequired, typeId } = req.body;
 
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .input('quantity', sql.Float, quantity)
-            .input('name', sql.NVarChar, name)
-            .input('unit', sql.NVarChar, unit)
-            .input('min', sql.Float, minimumRequired)
-            .input('typeId', sql.Int, typeId || null)
-            .query(`
-                UPDATE RawMaterials 
-                SET CurrentStock = COALESCE(@quantity, CurrentStock),
-                    Name = COALESCE(@name, Name),
-                    Unit = COALESCE(@unit, Unit),
-                    MinimumRequired = COALESCE(@min, MinimumRequired),
-                    TypeID = COALESCE(@typeId, TypeID),
-                    LastUpdated = GETUTCDATE() 
-                WHERE MaterialID = @id
-            `);
+        const result = await query(
+            `
+                UPDATE rawmaterials
+                SET currentstock = COALESCE($1, currentstock),
+                    name = COALESCE($2, name),
+                    unit = COALESCE($3, unit),
+                    minimumrequired = COALESCE($4, minimumrequired),
+                    typeid = COALESCE($5, typeid),
+                    lastupdated = NOW()
+                WHERE materialid = $6
+            `,
+            [quantity ?? null, name ?? null, unit ?? null, minimumRequired ?? null, typeId ?? null, id]
+        );
 
-        if (result.rowsAffected[0] === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Material not found' });
         }
 
@@ -87,9 +81,8 @@ router.put('/materials/:id', auth(['Admin']), async (req, res) => {
 // Get all Material Types
 router.get('/material-types', auth(), async (req, res) => {
     try {
-        const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM MaterialTypes ORDER BY TypeName ASC');
-        res.json(result.recordset);
+        const result = await query('SELECT * FROM materialtypes ORDER BY typename ASC');
+        res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -104,73 +97,63 @@ router.post('/materials', auth(['Admin']), async (req, res) => {
             return res.status(400).json({ error: 'Material name, stock, and unit are required' });
         }
 
-        const pool = await poolPromise;
-        const transaction = new sql.Transaction(pool);
-        await transaction.begin();
+        let finalTypeId = typeId || null;
 
-        try {
-            let finalTypeId = typeId || null;
+        const newMaterialId = await withTransaction(async (tx) => {
 
             // If no typeId provided, try to find or create one based on the name
             if (!finalTypeId) {
                 // Check if a type with this name already exists
-                const typeCheck = await transaction.request()
-                    .input('name', sql.NVarChar, materialName)
-                    .query('SELECT ID FROM MaterialTypes WHERE TypeName = @name');
+                const typeCheck = await tx.query(
+                    'SELECT id AS "ID" FROM materialtypes WHERE typename = $1',
+                    [materialName]
+                );
 
-                if (typeCheck.recordset.length > 0) {
-                    finalTypeId = typeCheck.recordset[0].ID;
+                if (typeCheck.rows.length > 0) {
+                    finalTypeId = typeCheck.rows[0].ID;
                 } else {
                     // Create a new MaterialType
-                    const newTypeResult = await transaction.request()
-                        .input('name', sql.NVarChar, materialName)
-                        .input('usr', sql.VarChar, req.user.username || 'admin')
-                        .input('now', sql.DateTime, new Date())
-                        .query(`
-                            INSERT INTO MaterialTypes (TypeName, CRE_USR_ID, CRE_USR_DT, LAST_USR_ID, LAST_USR_DT, LAST_USR_VER)
-                            OUTPUT INSERTED.ID
-                            VALUES (@name, @usr, @now, @usr, @now, NULL)
-                        `);
-                    finalTypeId = newTypeResult.recordset[0].ID;
+                    const newTypeResult = await tx.query(
+                        `
+                            INSERT INTO materialtypes (typename, cre_usr_id, cre_usr_dt, last_usr_id, last_usr_dt, last_usr_ver)
+                            VALUES ($1, $2, NOW(), $2, NOW(), NULL)
+                            RETURNING id AS "ID"
+                        `,
+                        [materialName, req.user.username || 'admin']
+                    );
+                    finalTypeId = newTypeResult.rows[0].ID;
                 }
             }
 
-            const result = await transaction.request()
-                .input('name', sql.NVarChar, materialName)
-                .input('stock', sql.Float, currentStock)
-                .input('unit', sql.NVarChar, unit)
-                .input('min', sql.Float, minimumRequired || 0)
-                .input('typeId', sql.Int, finalTypeId)
-                .query(`
-                    INSERT INTO RawMaterials (Name, CurrentStock, Unit, MinimumRequired, TypeID) 
-                    OUTPUT INSERTED.MaterialID
-                    VALUES (@name, @stock, @unit, @min, @typeId)
-                `);
+            const result = await tx.query(
+                `
+                    INSERT INTO rawmaterials (name, currentstock, unit, minimumrequired, typeid)
+                    VALUES ($1, $2, $3, $4, $5)
+                    RETURNING materialid AS "MaterialID"
+                `,
+                [materialName, currentStock, unit, minimumRequired || 0, finalTypeId]
+            );
 
-            const newMaterialId = result.recordset[0].MaterialID;
+            return result.rows[0].MaterialID;
+        });
 
-            // Log material creation
-            await logAction({
-                userId: req.user.id,
-                action: 'CREATE_MATERIAL',
-                entityName: 'RawMaterials',
-                entityId: newMaterialId,
-                details: {
-                    name: materialName,
-                    initialStock: currentStock,
-                    unit: unit,
-                    typeId: finalTypeId,
-                    timestamp: new Date().toISOString()
-                },
-                ipAddress: req.ip
-            });
+        // Log material creation
+        await logAction({
+            userId: req.user.id,
+            action: 'CREATE_MATERIAL',
+            entityName: 'RawMaterials',
+            entityId: newMaterialId,
+            details: {
+                name: materialName,
+                initialStock: currentStock,
+                unit: unit,
+                typeId: finalTypeId,
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
 
-            await transaction.commit();
-            res.status(201).json({ message: 'Material created successfully', materialId: newMaterialId });
-        } catch (err) {
-            await transaction.rollback();
-            throw err;
-        }
+        res.status(201).json({ message: 'Material created successfully', materialId: newMaterialId });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -181,22 +164,20 @@ router.post('/materials', auth(['Admin']), async (req, res) => {
 router.delete('/materials/:id', auth(['Admin']), async (req, res) => {
     try {
         const { id } = req.params;
-        const pool = await poolPromise;
 
         // Check if material is being used by products
-        const checkResult = await pool.request()
-            .input('id', sql.Int, id)
-            .query('SELECT COUNT(*) as count FROM ProductMaterials WHERE MaterialID = @id');
+        const checkResult = await query(
+            'SELECT COUNT(*) AS count FROM productmaterials WHERE materialid = $1',
+            [id]
+        );
 
-        if (checkResult.recordset[0].count > 0) {
+        if (checkResult.rows[0].count > 0) {
             return res.status(400).json({ error: 'Cannot delete material: It is being used by existing products.' });
         }
 
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .query('DELETE FROM RawMaterials WHERE MaterialID = @id');
+        const result = await query('DELETE FROM rawmaterials WHERE materialid = $1', [id]);
 
-        if (result.rowsAffected[0] === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Material not found' });
         }
 
@@ -229,13 +210,12 @@ router.put('/materials/:id/add-stock', auth(['Admin']), async (req, res) => {
             return res.status(400).json({ error: 'Valid quantity is required' });
         }
 
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .input('qty', sql.Float, parseFloat(quantity))
-            .query('UPDATE RawMaterials SET CurrentStock = CurrentStock + @qty WHERE MaterialID = @id');
+        const result = await query(
+            'UPDATE rawmaterials SET currentstock = currentstock + $1, lastupdated = NOW() WHERE materialid = $2',
+            [parseFloat(quantity), id]
+        );
 
-        if (result.rowsAffected[0] === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Material not found' });
         }
 
@@ -261,22 +241,26 @@ router.put('/materials/:id/add-stock', auth(['Admin']), async (req, res) => {
 // Get all Products (Available to all authenticated users)
 router.get('/products', auth(), async (req, res) => {
     try {
-        const pool = await poolPromise;
-        const isAdmin = req.user.role === 'Admin' ? 1 : 0;
+        const isUserAdmin = req.user.role === 'Admin';
 
-        const result = await pool.request()
-            .input('isUserAdmin', sql.Bit, isAdmin)
-            .query(`
-                SELECT p.*, 
-                    (SELECT MaterialID FROM ProductMaterials pm WHERE pm.ProductID = p.ProductID FOR JSON PATH) as MaterialIDs
-                FROM Products p 
-                WHERE p.IsActive = true OR p.IsActive IS NULL OR @isUserAdmin = 1
-            `);
+        const result = await query(
+            `
+                SELECT p.*,
+                    (
+                        SELECT json_agg(json_build_object('MaterialID', pm.materialid))
+                        FROM productmaterials pm
+                        WHERE pm.productid = p.productid
+                    ) AS "MaterialIDs"
+                FROM products p
+                WHERE p.isactive = true OR p.isactive IS NULL OR $1 = true
+            `,
+            [isUserAdmin]
+        );
 
-        // Parse MaterialIDs from JSON string if necessary
-        const products = result.recordset.map(p => ({
+        // MaterialIDs arrives as a JSON array (or NULL when the product has no materials)
+        const products = result.rows.map(p => ({
             ...p,
-            MaterialIDs: p.MaterialIDs ? JSON.parse(p.MaterialIDs).map(m => m.MaterialID) : []
+            MaterialIDs: Array.isArray(p.MaterialIDs) ? p.MaterialIDs.map(m => m.MaterialID) : []
         }));
 
         res.json(products);
@@ -293,49 +277,45 @@ router.post('/products', auth(['Admin']), async (req, res) => {
             return res.status(400).json({ error: 'Product name, at least one material ID, and quantity per unit are required' });
         }
 
-        const pool = await poolPromise;
-        const transaction = new sql.Transaction(pool);
-        await transaction.begin();
+        const productId = await withTransaction(async (tx) => {
+            const productResult = await tx.query(
+                `
+                    INSERT INTO products (productname, basematerialid, materialquantityperunit, price, imageurl, isactive)
+                    VALUES ($1, $2, $3, $4, $5, true)
+                    RETURNING productid AS "ProductID"
+                `,
+                // Keep the first material in BaseMaterialID for backward compatibility
+                [productName, materialIds[0], materialQuantityPerUnit, price || null, imageUrl || null]
+            );
 
-        try {
-            const productResult = await transaction.request()
-                .input('name', sql.NVarChar, productName)
-                .input('materialId', sql.Int, materialIds[0]) // Still keep the first one in BaseMaterialID for backward compatibility
-                .input('qty', sql.Float, materialQuantityPerUnit)
-                .input('price', sql.Decimal(10, 2), price || null)
-                .input('imageUrl', sql.NVarChar, imageUrl || null)
-                .query('INSERT INTO Products (ProductName, BaseMaterialID, MaterialQuantityPerUnit, Price, ImageURL, IsActive) OUTPUT INSERTED.ProductID VALUES (@name, @materialId, @qty, @price, @imageUrl, 1)');
-
-            const productId = productResult.recordset[0].ProductID;
+            const newProductId = productResult.rows[0].ProductID;
 
             for (const mId of materialIds) {
-                await transaction.request()
-                    .input('pId', sql.Int, productId)
-                    .input('mId', sql.Int, mId)
-                    .query('INSERT INTO ProductMaterials (ProductID, MaterialID) VALUES (@pId, @mId)');
+                await tx.query(
+                    'INSERT INTO productmaterials (productid, materialid) VALUES ($1, $2)',
+                    [newProductId, mId]
+                );
             }
 
-            // Log product creation
-            await logAction({
-                userId: req.user.id,
-                action: 'CREATE_PRODUCT',
-                entityName: 'Products',
-                entityId: productId,
-                details: {
-                    name: productName,
-                    materialIds: materialIds,
-                    price: price,
-                    timestamp: new Date().toISOString()
-                },
-                ipAddress: req.ip
-            });
+            return newProductId;
+        });
 
-            await transaction.commit();
-            res.status(201).json({ message: 'Product created successfully' });
-        } catch (err) {
-            await transaction.rollback();
-            throw err;
-        }
+        // Log product creation
+        await logAction({
+            userId: req.user.id,
+            action: 'CREATE_PRODUCT',
+            entityName: 'Products',
+            entityId: productId,
+            details: {
+                name: productName,
+                materialIds: materialIds,
+                price: price,
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
+
+        res.status(201).json({ message: 'Product created successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -346,91 +326,83 @@ router.put('/products/:id', auth(['Admin']), async (req, res) => {
     try {
         const { id } = req.params;
         const { productName, materialIds, materialQuantityPerUnit, price, imageUrl, isActive } = req.body;
+        const activeFlag = isActive === undefined ? true : Boolean(isActive);
 
-        const pool = await poolPromise;
-        const transaction = new sql.Transaction(pool);
-        await transaction.begin();
-
-        try {
-            await transaction.request()
-                .input('id', sql.Int, id)
-                .input('name', sql.NVarChar, productName)
-                .input('materialId', sql.Int, Array.isArray(materialIds) && materialIds.length > 0 ? materialIds[0] : null)
-                .input('qty', sql.Float, materialQuantityPerUnit)
-                .input('price', sql.Decimal(10, 2), price)
-                .input('imageUrl', sql.NVarChar, imageUrl)
-                .input('isActive', sql.Bit, isActive !== undefined ? isActive : 1)
-                .query(`
-                    UPDATE Products 
-                    SET ProductName = COALESCE(@name, ProductName),
-                        BaseMaterialID = COALESCE(@materialId, BaseMaterialID),
-                        MaterialQuantityPerUnit = COALESCE(@qty, MaterialQuantityPerUnit),
-                        Price = @price,
-                        ImageURL = @imageUrl,
-                        IsActive = @isActive
-                    WHERE ProductID = @id
-                `);
+        await withTransaction(async (tx) => {
+            await tx.query(
+                `
+                    UPDATE products
+                    SET productname = COALESCE($2, productname),
+                        basematerialid = COALESCE($3, basematerialid),
+                        materialquantityperunit = COALESCE($4, materialquantityperunit),
+                        price = $5,
+                        imageurl = $6,
+                        isactive = $7
+                    WHERE productid = $1
+                `,
+                [
+                    id,
+                    productName ?? null,
+                    Array.isArray(materialIds) && materialIds.length > 0 ? materialIds[0] : null,
+                    materialQuantityPerUnit ?? null,
+                    price ?? null,
+                    imageUrl ?? null,
+                    activeFlag
+                ]
+            );
 
             if (Array.isArray(materialIds)) {
-                await transaction.request().input('id', sql.Int, id).query('DELETE FROM ProductMaterials WHERE ProductID = @id');
+                await tx.query('DELETE FROM productmaterials WHERE productid = $1', [id]);
                 for (const mId of materialIds) {
-                    await transaction.request()
-                        .input('pId', sql.Int, id)
-                        .input('mId', sql.Int, mId)
-                        .query('INSERT INTO ProductMaterials (ProductID, MaterialID) VALUES (@pId, @mId)');
+                    await tx.query(
+                        'INSERT INTO productmaterials (productid, materialid) VALUES ($1, $2)',
+                        [id, mId]
+                    );
                 }
             }
+        });
 
-            // Log product update
-            await logAction({
-                userId: req.user.id,
-                action: 'UPDATE_PRODUCT',
-                entityName: 'Products',
-                entityId: id,
-                details: {
-                    name: productName,
-                    price: price,
-                    isActive: isActive,
-                    timestamp: new Date().toISOString()
-                },
-                ipAddress: req.ip
-            });
+        // Log product update
+        await logAction({
+            userId: req.user.id,
+            action: 'UPDATE_PRODUCT',
+            entityName: 'Products',
+            entityId: id,
+            details: {
+                name: productName,
+                price: price,
+                isActive: isActive,
+                timestamp: new Date().toISOString()
+            },
+            ipAddress: req.ip
+        });
 
-            await transaction.commit();
-            res.json({ message: 'Product updated successfully' });
-        } catch (err) {
-            await transaction.rollback();
-            throw err;
-        }
+        res.json({ message: 'Product updated successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Delete Product (Soft delete or hard delete?) 
+// Delete Product (Soft delete or hard delete?)
 // For now, let's do hard delete but check for orders
 router.delete('/products/:id', auth(['Admin']), async (req, res) => {
     try {
         const { id } = req.params;
-        const pool = await poolPromise;
 
-        const checkResult = await pool.request()
-            .input('id', sql.Int, id)
-            .query('SELECT COUNT(*) as count FROM Orders WHERE ProductID = @id');
+        const checkResult = await query(
+            'SELECT COUNT(*) AS count FROM orders WHERE productid = $1',
+            [id]
+        );
 
-        if (checkResult.recordset[0].count > 0) {
+        if (checkResult.rows[0].count > 0) {
             // Suggest soft delete instead
-            await pool.request()
-                .input('id', sql.Int, id)
-                .query('UPDATE Products SET IsActive = 0 WHERE ProductID = @id');
+            await query('UPDATE products SET isactive = false WHERE productid = $1', [id]);
             return res.json({ message: 'Product is used in orders. It has been deactivated instead of deleted.' });
         }
 
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .query('DELETE FROM Products WHERE ProductID = @id');
+        const result = await query('DELETE FROM products WHERE productid = $1', [id]);
 
-        if (result.rowsAffected[0] === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Product not found' });
         }
 

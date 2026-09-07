@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 const auth = require('../middleware/authMiddleware');
 const { logAction } = require('../utils/auditLogger');
+const { query } = require('../config/db');
 
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 
@@ -20,33 +21,30 @@ router.get('/predict', auth(['Admin', 'Super Admin']), async (req, res) => {
         });
 
         const response = await axios.get(`${PYTHON_SERVICE_URL}/predict?days=${days}`).catch(() => null);
-        
+
         if (response && response.data) {
             return res.json(response.data);
         }
 
         // --- SMART FALLBACK: Calculate basic burn rate if ML service is offline ---
-        const { poolPromise } = require('../config/db');
-        const pool = await poolPromise;
-        
         // Calculate days remaining based on Current Stock / Average daily usage from pending orders
-        const fallbackResult = await pool.request().query(`
-            SELECT 
-                rm.Name as material,
-                rm.CurrentStock,
-                COALESCE(SUM(o.Quantity * p.MaterialQuantityPerUnit), 0) as total_required,
-                CASE 
-                    WHEN COALESCE(SUM(o.Quantity * p.MaterialQuantityPerUnit), 0) = 0 THEN 99
-                    ELSE CAST((rm.CurrentStock / NULLIF(SUM(o.Quantity * p.MaterialQuantityPerUnit) / 30.0, 0)) AS INT)
-                END as days_remaining
-            FROM RawMaterials rm
-            LEFT JOIN ProductMaterials pm ON rm.MaterialID = pm.MaterialID
-            LEFT JOIN Products p ON pm.ProductID = p.ProductID
-            LEFT JOIN Orders o ON p.ProductID = o.ProductID AND o.Status NOT IN ('Completed', 'Cancelled')
-            GROUP BY rm.Name, rm.CurrentStock
+        const fallbackResult = await query(`
+            SELECT
+                rm.name AS material,
+                rm.currentstock,
+                COALESCE(SUM(o.quantity * p.materialquantityperunit), 0) AS total_required,
+                CASE
+                    WHEN COALESCE(SUM(o.quantity * p.materialquantityperunit), 0) = 0 THEN 99
+                    ELSE CAST((rm.currentstock / NULLIF(SUM(o.quantity * p.materialquantityperunit) / 30.0, 0)) AS INT)
+                END AS days_remaining
+            FROM rawmaterials rm
+            LEFT JOIN productmaterials pm ON rm.materialid = pm.materialid
+            LEFT JOIN products p ON pm.productid = p.productid
+            LEFT JOIN orders o ON p.productid = o.productid AND o.status NOT IN ('Completed', 'Cancelled')
+            GROUP BY rm.name, rm.currentstock
         `);
 
-        res.json(fallbackResult.recordset);
+        res.json(fallbackResult.rows);
     } catch (err) {
         console.error('Predictions error:', err);
         res.status(500).json({ error: 'Failed to generate inventory forecast' });
@@ -56,9 +54,6 @@ router.get('/predict', auth(['Admin', 'Super Admin']), async (req, res) => {
 // Get Production Summary for Analytics (Available to Admin/Super Admin)
 router.get('/production-summary', auth(['Admin', 'Super Admin']), async (req, res) => {
     try {
-        const { poolPromise, sql } = require('../config/db');
-        const pool = await poolPromise;
-
         // Log analytics access
         await logAction({
             userId: req.user.id,
@@ -68,103 +63,86 @@ router.get('/production-summary', auth(['Admin', 'Super Admin']), async (req, re
         });
 
         // 1. Weekly Production Output (Last 7 days - ensuring all days are present)
-        const isNeon = !!process.env.NEON_DATABASE_URL;
-        const weeklyQuery = isNeon ? `
-            SELECT 
-                d.date::date as date, 
-                COALESCE(SUM(pl.QuantityProduced), 0) as total
+        const weeklyResult = await query(`
+            SELECT
+                d.date::date AS date,
+                COALESCE(SUM(pl.quantityproduced), 0)::int AS total
             FROM generate_series(
-                (CURRENT_DATE - INTERVAL '6 days')::date, 
-                CURRENT_DATE::date, 
+                (CURRENT_DATE - INTERVAL '6 days')::date,
+                CURRENT_DATE::date,
                 '1 day'::interval
             ) AS d(date)
-            LEFT JOIN ProductionLogs pl ON CAST(pl.LogDate AS DATE) = d.date::date
+            LEFT JOIN productionlogs pl ON pl.logdate::date = d.date::date
             GROUP BY d.date
             ORDER BY d.date ASC
-        ` : `
-            WITH Last7Days AS (
-                SELECT CAST(DATEADD(day, -6, GETUTCDATE()) AS DATE) as date
-                UNION ALL
-                SELECT DATEADD(day, 1, date)
-                FROM Last7Days
-                WHERE date < CAST(GETUTCDATE() AS DATE)
-            )
-            SELECT 
-                d.date, 
-                COALESCE(SUM(pl.QuantityProduced), 0) as total
-            FROM Last7Days d
-            LEFT JOIN ProductionLogs pl ON CAST(pl.LogDate AS DATE) = d.date
-            GROUP BY d.date
-            ORDER BY d.date ASC
-        `;
-
-        const weeklyResult = await pool.request().query(weeklyQuery);
+        `);
 
         // 2. Worker Productivity (Total products logged per worker)
-        const workerResult = await pool.request().query(`
-            SELECT TOP 5
-                u.Username, 
-                SUM(pl.QuantityProduced) as totalQuantity,
-                COUNT(pl.LogID) as logCount
-            FROM ProductionLogs pl
-            JOIN Users u ON pl.WorkerID = u.UserID
-            GROUP BY u.Username
-            ORDER BY totalQuantity DESC
+        const workerResult = await query(`
+            SELECT
+                u.username AS "Username",
+                SUM(pl.quantityproduced)::int AS "totalQuantity",
+                COUNT(pl.logid)::int AS "logCount"
+            FROM productionlogs pl
+            JOIN users u ON pl.workerid = u.userid
+            GROUP BY u.username
+            ORDER BY SUM(pl.quantityproduced) DESC
+            LIMIT 5
         `);
 
         // 3. Overall Dashboard KPIs (with Historical Data for Trends)
-        const statsResult = await pool.request().query(`
-            SELECT 
+        const statsResult = await query(`
+            SELECT
                 -- Active Orders & Trend
-                (SELECT COUNT(*) FROM Orders WHERE Status NOT IN ('Completed', 'Cancelled')) as activeOrders,
-                (SELECT COUNT(*) FROM Orders WHERE Status = 'Completed' AND CAST(CompletionDate AS DATE) = CAST(GETUTCDATE() AS DATE)) as completedToday,
-                (SELECT 
-                    CASE 
+                (SELECT COUNT(*)::int FROM orders WHERE status NOT IN ('Completed', 'Cancelled')) AS "activeOrders",
+                (SELECT COUNT(*)::int FROM orders WHERE status = 'Completed' AND completiondate::date = CURRENT_DATE) AS "completedToday",
+                (SELECT
+                    CASE
                         WHEN prev_active = 0 THEN 0
-                        ELSE CAST(ROUND(((curr_active - prev_active) / CAST(prev_active AS FLOAT)) * 100, 1) AS FLOAT)
+                        ELSE ROUND((((curr_active - prev_active)::numeric / prev_active) * 100), 1)::float8
                     END
                 FROM (
-                    SELECT (SELECT COUNT(*) FROM Orders WHERE Status NOT IN ('Completed', 'Cancelled')) as curr_active,
-                           (SELECT COUNT(*) FROM Orders WHERE OrderDate <= DATEADD(day, -7, GETUTCDATE()) AND (CompletionDate IS NULL OR CompletionDate > DATEADD(day, -7, GETUTCDATE())) AND Status != 'Cancelled') as prev_active
-                ) as active_counts) as activeOrdersTrend,
+                    SELECT (SELECT COUNT(*)::int FROM orders WHERE status NOT IN ('Completed', 'Cancelled')) AS curr_active,
+                           (SELECT COUNT(*)::int FROM orders WHERE orderdate <= (NOW() - INTERVAL '7 days') AND (completiondate IS NULL OR completiondate > (NOW() - INTERVAL '7 days')) AND status != 'Cancelled') AS prev_active
+                ) AS active_counts) AS "activeOrdersTrend",
 
                 -- Factory Efficiency & Target
-                (SELECT 
-                    CASE 
-                        WHEN SUM(o.Quantity) = 0 THEN 0
-                        ELSE CAST(ROUND((SUM(CAST(COALESCE(pl.TotalProduced, 0) AS FLOAT)) / SUM(o.Quantity)) * 100, 0) AS INT)
+                (SELECT
+                    CASE
+                        WHEN COALESCE(SUM(o.quantity), 0) = 0 THEN 0
+                        ELSE CAST(ROUND((SUM(COALESCE(pl.totalproduced, 0))::numeric / SUM(o.quantity)) * 100, 0) AS INT)
                     END
-                FROM Orders o
+                FROM orders o
                 LEFT JOIN (
-                    SELECT OrderID, SUM(QuantityProduced) as TotalProduced 
-                    FROM ProductionLogs GROUP BY OrderID
-                ) pl ON o.OrderID = pl.OrderID
-                WHERE o.Status = 'Manufacturing') as efficiency,
-                90 as targetEfficiency,
+                    SELECT orderid, SUM(quantityproduced) AS totalproduced
+                    FROM productionlogs GROUP BY orderid
+                ) pl ON o.orderid = pl.orderid
+                WHERE o.status = 'Manufacturing') AS "efficiency",
+                90 AS "targetEfficiency",
 
                 -- Weekly Production & Trend
-                (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -7, GETUTCDATE())) as totalProduced,
-                (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -14, GETUTCDATE()) AND LogDate < DATEADD(day, -7, GETUTCDATE())) as lastWeekProduced,
-                (SELECT 
-                    CASE 
+                (SELECT COALESCE(SUM(quantityproduced), 0)::int FROM productionlogs WHERE logdate >= (NOW() - INTERVAL '7 days')) AS "totalProduced",
+                (SELECT COALESCE(SUM(quantityproduced), 0)::int FROM productionlogs WHERE logdate >= (NOW() - INTERVAL '14 days') AND logdate < (NOW() - INTERVAL '7 days')) AS "lastWeekProduced",
+                (SELECT
+                    CASE
                         WHEN prev = 0 THEN 0
-                        ELSE CAST(ROUND(((curr - prev) / CAST(prev AS FLOAT)) * 100, 1) AS FLOAT)
+                        ELSE ROUND((((curr - prev)::numeric / prev) * 100), 1)::float8
                     END
                 FROM (
-                    SELECT (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -7, GETUTCDATE())) as curr,
-                           (SELECT COALESCE(SUM(QuantityProduced), 0) FROM ProductionLogs WHERE LogDate >= DATEADD(day, -14, GETUTCDATE()) AND LogDate < DATEADD(day, -7, GETUTCDATE())) as prev
-                ) as production_counts) as productionTrend,
+                    SELECT (SELECT COALESCE(SUM(quantityproduced), 0)::int FROM productionlogs WHERE logdate >= (NOW() - INTERVAL '7 days')) AS curr,
+                           (SELECT COALESCE(SUM(quantityproduced), 0)::int FROM productionlogs WHERE logdate >= (NOW() - INTERVAL '14 days') AND logdate < (NOW() - INTERVAL '7 days')) AS prev
+                ) AS production_counts) AS "productionTrend",
 
                 -- Critical Alerts
-                (SELECT COUNT(*) FROM RawMaterials WHERE CurrentStock < 10) as lowStockCount,
-                ((SELECT COUNT(*) FROM RawMaterials WHERE CurrentStock < 10) + 
-                 (SELECT COUNT(*) FROM Orders WHERE Status = 'Pending' AND OrderDate < DATEADD(day, -3, GETUTCDATE()))) as alerts
+                (SELECT COUNT(*)::int FROM rawmaterials WHERE currentstock < 10) AS "lowStockCount",
+                ((SELECT COUNT(*)::int FROM rawmaterials WHERE currentstock < 10) +
+                 (SELECT COUNT(*)::int FROM orders WHERE status = 'Pending' AND orderdate < (NOW() - INTERVAL '3 days'))) AS "alerts"
         `);
 
         res.json({
-            weeklyProduction: weeklyResult.recordset || [],
-            workerPerformance: workerResult.recordset || [],
-            stats: (statsResult.recordset && statsResult.recordset[0]) || {
+            weeklyProduction: weeklyResult.rows || [],
+            workerPerformance: workerResult.rows || [],
+            stats: (statsResult.rows && statsResult.rows[0]) || {
                 activeOrders: 0,
                 completedToday: 0,
                 activeOrdersTrend: 0,

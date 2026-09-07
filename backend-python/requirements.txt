@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-pymssql
+psycopg2-binary
 pydantic
 pydantic-settings
 pandas

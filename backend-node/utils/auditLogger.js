@@ -1,4 +1,4 @@
-const { poolPromise, sql } = require('../config/db');
+const { query } = require('../config/db');
 
 /**
  * Log an action to the AuditLogs table
@@ -12,20 +12,22 @@ const { poolPromise, sql } = require('../config/db');
  */
 async function logAction({ userId, action, entityName, entityId, details, ipAddress }) {
     try {
-        const pool = await poolPromise;
         const detailsString = typeof details === 'object' ? JSON.stringify(details) : details;
 
-        await pool.request()
-            .input('userId', sql.Int, userId || null)
-            .input('action', sql.NVarChar, action)
-            .input('entityName', sql.NVarChar, entityName || null)
-            .input('entityId', sql.Int, entityId || null)
-            .input('details', sql.NVarChar, detailsString || null)
-            .input('ipAddress', sql.NVarChar, ipAddress || null)
-            .query(`
-                INSERT INTO AuditLogs (UserID, Action, EntityName, EntityID, Details, IPAddress, CreatedAt)
-                VALUES (@userId, @action, @entityName, @entityId, @details, @ipAddress, GETUTCDATE())
-            `);
+        await query(
+            `
+                INSERT INTO auditlogs (userid, action, entityname, entityid, details, ipaddress, createdat)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            `,
+            [
+                userId ?? null,
+                action,
+                entityName ?? null,
+                entityId ?? null,
+                detailsString ?? null,
+                ipAddress ?? null
+            ]
+        );
     } catch (err) {
         // We don't want to fail the main transaction if logging fails, but we should record the error
         console.error('Audit Log Error:', err);

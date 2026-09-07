@@ -3,7 +3,7 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system dependencies for pymssql if needed
+# Install system dependencies for psycopg2 if needed
 RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \

@@ -1,34 +1,40 @@
-import pymssql
+import psycopg2
 import pandas as pd
 from datetime import datetime, timedelta
-from config import settings
+from config import settings, database_url
+
 
 class PredictionService:
     def __init__(self):
-        self.conn_params = {
-            "server": settings.DB_SERVER,
-            "user": settings.DB_USER,
-            "password": settings.DB_PASSWORD,
-            "database": settings.DB_DATABASE
-        }
+        self.dsn = database_url()
 
     def get_connection(self):
-        return pymssql.connect(**self.conn_params)
+        if not self.dsn:
+            raise RuntimeError(
+                "NEON_DATABASE_URL / DATABASE_URL is not configured for the prediction service"
+            )
+        return psycopg2.connect(self.dsn, sslmode="require")
 
     def predict_stockout(self, window_days=7):
         conn = self.get_connection()
         try:
             # 1. Fetch current stock levels
-            materials_query = "SELECT MaterialID, Name, CurrentStock, Unit FROM RawMaterials"
+            materials_query = (
+                'SELECT materialid AS "MaterialID", name AS "Name", '
+                'currentstock AS "CurrentStock", unit AS "Unit" FROM rawmaterials'
+            )
             df_materials = pd.read_sql(materials_query, conn)
 
             # 2. Fetch production logs for the requested window to calculate rate
             start_date = datetime.now() - timedelta(days=window_days)
             logs_query = """
-                SELECT pl.QuantityProduced, p.BaseMaterialID, p.MaterialQuantityPerUnit, pl.LogDate
-                FROM ProductionLogs pl
-                JOIN Products p ON pl.ProductID = p.ProductID
-                WHERE pl.LogDate >= %s
+                SELECT pl.quantityproduced AS "QuantityProduced",
+                       p.basematerialid AS "BaseMaterialID",
+                       p.materialquantityperunit AS "MaterialQuantityPerUnit",
+                       pl.logdate AS "LogDate"
+                FROM productionlogs pl
+                JOIN products p ON pl.productid = p.productid
+                WHERE pl.logdate >= %s
             """
             df_logs = pd.read_sql(logs_query, conn, params=(start_date,))
 
@@ -49,7 +55,7 @@ class PredictionService:
 
             # Fix: Handle division by zero if consumption is 0 or NaN
             results['days_remaining'] = results.apply(
-                lambda row: row['CurrentStock'] / row['consumed'] if not pd.isna(row['consumed']) and row['consumed'] > 0 else 999, 
+                lambda row: row['CurrentStock'] / row['consumed'] if not pd.isna(row['consumed']) and row['consumed'] > 0 else 999,
                 axis=1
             )
 

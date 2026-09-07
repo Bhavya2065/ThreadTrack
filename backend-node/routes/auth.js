@@ -2,19 +2,14 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { poolPromise, sql } = require('../config/db');
+const { query } = require('../config/db');
 const { logAction } = require('../utils/auditLogger');
 
 // Fetch Public Roles for Signup
 router.get('/roles', async (req, res) => {
     try {
-        const pool = await poolPromise;
-        const isNeon = !!process.env.NEON_DATABASE_URL;
-        const queryStr = isNeon
-            ? 'SELECT role_name as "RoleName" FROM roles WHERE ispublic = true'
-            : 'SELECT RoleName FROM Roles WHERE IsPublic = 1';
-        const result = await pool.request().query(queryStr);
-        res.json(result.recordset.map(r => r.RoleName || r.role_name || r.rolename));
+        const result = await query('SELECT role_name AS "RoleName" FROM roles WHERE ispublic = true');
+        res.json(result.rows.map(r => r.RoleName));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -24,7 +19,7 @@ router.get('/roles', async (req, res) => {
 router.post('/register', async (req, res) => {
     try {
         const { username, password, role } = req.body;
-        
+
         // Username validation
         const hasLetter = /[a-zA-Z]/.test(username);
         const hasDigit = /[0-9]/.test(username);
@@ -37,14 +32,10 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        const pool = await poolPromise;
-
         // Check if user already exists
-        const existingUser = await pool.request()
-            .input('username', sql.NVarChar, username)
-            .query('SELECT 1 FROM Users WHERE Username = @username');
+        const existingUser = await query('SELECT 1 FROM users WHERE username = $1', [username]);
 
-        if (existingUser.recordset.length > 0) {
+        if (existingUser.rows.length > 0) {
             return res.status(400).json({ error: 'Username already exists' });
         }
 
@@ -62,15 +53,14 @@ router.post('/register', async (req, res) => {
         const initialStatus = 'Pending';
         const requestedRole = role || 'Buyer';
 
-        const result = await pool.request()
-            .input('username', sql.NVarChar, username)
-            .input('password', sql.NVarChar, hashedPassword)
-            .input('role', sql.NVarChar, requestedRole)
-            .input('status', sql.NVarChar, initialStatus)
-            .input('requestedRole', sql.NVarChar, requestedRole)
-            .query('INSERT INTO Users (Username, PasswordHash, Role, Status, RequestedRole, RoleID) OUTPUT INSERTED.UserID VALUES (@username, @password, @role, @status, @requestedRole, NULL)');
+        const result = await query(
+            `INSERT INTO users (username, passwordhash, role, status, requestedrole, roleid)
+             VALUES ($1, $2, $3, $4, $5, NULL)
+             RETURNING userid AS "UserID"`,
+            [username, hashedPassword, requestedRole, initialStatus, requestedRole]
+        );
 
-        const newUserId = result.recordset[0].UserID;
+        const newUserId = result.rows[0].UserID;
 
         // Log registration
         await logAction({
@@ -92,14 +82,14 @@ router.post('/register', async (req, res) => {
         console.error('[Auth] Registration Error:', err);
 
         // Proper Error Handling as per user rules (specific error types)
-        if (err.code === 'ETIMEOUT') {
+        if (err.code === 'ETIMEDOUT' || err.code === 'ETIMEOUT') {
             return res.status(408).json({
                 error: 'Database timeout occurred. Please try again later.',
                 type: 'timeout'
             });
         }
 
-        if (err.message && err.message.includes('unique constraint')) {
+        if (err.code === '23505' || (err.message && err.message.includes('unique constraint'))) {
             return res.status(400).json({
                 error: 'Username already exists.',
                 type: 'duplicate'
@@ -119,12 +109,10 @@ router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         console.log(`[Auth] Login attempt for user: ${username}`);
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('username', sql.NVarChar, username)
-            .query('SELECT * FROM Users WHERE Username = @username');
 
-        const user = result.recordset[0];
+        const result = await query('SELECT * FROM users WHERE username = $1', [username]);
+
+        const user = result.rows[0];
         if (!user) {
             // Log failed login (user not found)
             await logAction({

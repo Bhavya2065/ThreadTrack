@@ -1,91 +1,116 @@
--- Create ThreadTrack Database
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'ThreadTrack')
-BEGIN
-    CREATE DATABASE ThreadTrack;
-END
-GO
-
-USE ThreadTrack;
-GO
+-- ============================================================
+-- ThreadTrack - PostgreSQL (Neon) Schema
+-- Replaces the old MSSQL schema. Idempotent: safe to re-run.
+-- Naming matches the live Neon database (all-lowercase columns).
+-- ============================================================
 
 -- Users Table
-CREATE TABLE Users (
-    UserID INT PRIMARY KEY IDENTITY(1,1),
-    Username NVARCHAR(50) NOT NULL UNIQUE,
-    PasswordHash NVARCHAR(255) NOT NULL,
-    Role NVARCHAR(20) NOT NULL CHECK (Role IN ('Admin', 'Worker', 'Buyer', 'Pending', 'Super Admin')),
-    CreatedAt DATETIME DEFAULT GETDATE()
+CREATE TABLE IF NOT EXISTS users (
+    userid        SERIAL PRIMARY KEY,
+    username      VARCHAR NOT NULL UNIQUE,
+    passwordhash  VARCHAR NOT NULL,
+    role          VARCHAR NOT NULL CHECK (role IN ('Admin', 'Worker', 'Buyer', 'Pending', 'Super Admin')),
+    createdat     TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    pushtoken     VARCHAR,
+    status        VARCHAR DEFAULT 'Approved',
+    roleid        INTEGER,
+    requestedrole VARCHAR
+);
+
+-- Roles Table
+CREATE TABLE IF NOT EXISTS roles (
+    role_id    SERIAL PRIMARY KEY,
+    role_name  VARCHAR,
+    cre_usr_dt TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    ispublic   BOOLEAN DEFAULT true
+);
+
+-- Material Types Table
+CREATE TABLE IF NOT EXISTS materialtypes (
+    id           SERIAL PRIMARY KEY,
+    typename     VARCHAR,
+    cre_usr_id   VARCHAR,
+    cre_usr_dt   TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_usr_id  VARCHAR,
+    last_usr_dt  TIMESTAMP WITHOUT TIME ZONE,
+    last_usr_ver VARCHAR
 );
 
 -- Raw Materials Table
-CREATE TABLE RawMaterials (
-    MaterialID INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(100) NOT NULL,
-    CurrentStock FLOAT NOT NULL DEFAULT 0,
-    Unit NVARCHAR(20) NOT NULL, -- e.g., 'meters', 'kg', 'units'
-    MinimumRequired FLOAT NOT NULL DEFAULT 0,
-    LastUpdated DATETIME DEFAULT GETDATE()
+CREATE TABLE IF NOT EXISTS rawmaterials (
+    materialid      SERIAL PRIMARY KEY,
+    name            VARCHAR NOT NULL,
+    currentstock    DOUBLE PRECISION NOT NULL DEFAULT 0,
+    unit            VARCHAR NOT NULL, -- e.g., 'meters', 'kg', 'units'
+    minimumrequired DOUBLE PRECISION NOT NULL DEFAULT 0,
+    lastupdated     TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    typeid          INTEGER
 );
 
 -- Products Table
-CREATE TABLE Products (
-    ProductID INT PRIMARY KEY IDENTITY(1,1),
-    ProductName NVARCHAR(100) NOT NULL,
-    Description NVARCHAR(MAX),
-    BaseMaterialID INT FOREIGN KEY REFERENCES RawMaterials(MaterialID),
-    MaterialQuantityPerUnit FLOAT NOT NULL,
-    Price DECIMAL(10, 2),
-    ImageURL NVARCHAR(MAX),
-    IsActive BIT DEFAULT 1
+CREATE TABLE IF NOT EXISTS products (
+    productid               SERIAL PRIMARY KEY,
+    productname             VARCHAR NOT NULL,
+    description             TEXT,
+    basematerialid          INTEGER REFERENCES rawmaterials(materialid),
+    materialquantityperunit DOUBLE PRECISION NOT NULL,
+    price                   NUMERIC(10, 2),
+    imageurl                TEXT,
+    isactive                BOOLEAN DEFAULT true
 );
 
 -- Orders Table
-CREATE TABLE Orders (
-    OrderID INT PRIMARY KEY IDENTITY(1,1),
-    BuyerID INT FOREIGN KEY REFERENCES Users(UserID),
-    ProductID INT FOREIGN KEY REFERENCES Products(ProductID),
-    Quantity INT NOT NULL,
-    Status NVARCHAR(20) DEFAULT 'Pending' CHECK (Status IN ('Pending', 'Approved', 'Manufacturing', 'In Progress', 'Completed', 'Cancelled', 'Inquiry')),
-    OrderDate DATETIME DEFAULT GETDATE(),
-    CompletionDate DATETIME,
-    CompletionNotes NVARCHAR(MAX)
+CREATE TABLE IF NOT EXISTS orders (
+    orderid         SERIAL PRIMARY KEY,
+    buyerid         INTEGER REFERENCES users(userid),
+    productid       INTEGER REFERENCES products(productid),
+    quantity        INTEGER NOT NULL,
+    status          VARCHAR DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'Manufacturing', 'In Progress', 'Completed', 'Cancelled', 'Inquiry')),
+    orderdate       TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    completiondate  TIMESTAMP WITHOUT TIME ZONE,
+    completionnotes TEXT,
+    notes           TEXT,
+    shippingaddress TEXT
 );
 
--- Production Logs Table
-CREATE TABLE ProductionLogs (
-    LogID INT PRIMARY KEY IDENTITY(1,1),
-    WorkerID INT FOREIGN KEY REFERENCES Users(UserID),
-    ProductID INT FOREIGN KEY REFERENCES Products(ProductID),
-    OrderID INT FOREIGN KEY REFERENCES Orders(OrderID), -- Added to track production against specific orders
-    QuantityProduced INT NOT NULL,
-    LogDate DATETIME DEFAULT GETDATE()
+-- Production Logs Table (tracks production against specific orders)
+CREATE TABLE IF NOT EXISTS productionlogs (
+    logid            SERIAL PRIMARY KEY,
+    workerid         INTEGER REFERENCES users(userid),
+    productid        INTEGER REFERENCES products(productid),
+    orderid          INTEGER REFERENCES orders(orderid),
+    quantityproduced INTEGER NOT NULL,
+    logdate          TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Audit Logs Table for tracking system-wide operations
-CREATE TABLE AuditLogs (
-    LogID INT PRIMARY KEY IDENTITY(1,1),
-    UserID INT FOREIGN KEY REFERENCES Users(UserID),
-    Action NVARCHAR(100) NOT NULL, -- e.g., 'USER_LOGIN', 'CREATE_ORDER'
-    EntityName NVARCHAR(50),      -- e.g., 'Orders', 'Users'
-    EntityID INT,                 -- ID of the affected record
-    Details NVARCHAR(MAX),        -- JSON or descriptive summary of the action
-    IPAddress NVARCHAR(50),
-    CreatedAt DATETIME DEFAULT GETDATE()
+-- ProductMaterials Table (multiple materials per product)
+CREATE TABLE IF NOT EXISTS productmaterials (
+    productmaterialid SERIAL PRIMARY KEY,
+    productid         INTEGER REFERENCES products(productid) ON DELETE CASCADE,
+    materialid        INTEGER REFERENCES rawmaterials(materialid) ON DELETE CASCADE
 );
-GO
-GO
 
--- Seed Initial Data
--- Note: Passwords are 'admin123', 'worker123', 'buyer123'
-INSERT INTO Users (Username, PasswordHash, Role) VALUES 
-('admin', '$2b$10$Bk.zf6CJ.KDeKDgxI6SwXOOBRHEKvS7JTqyaogPfIE9flYZI', 'Admin'),
-('worker1', '$2b$10$7R6vWREl.5vP2C3y8Yyq.OXpS8uHJZ.zM.8S.m.e.f.g.h.i.j.k', 'Worker'),
-('buyer1', '$2b$10$9s6vWREl.5vP2C3y8Yyq.OXpS8uHJZ.zM.8S.m.e.f.g.h.i.j.k', 'Buyer');
+-- Notifications Table
+CREATE TABLE IF NOT EXISTS notifications (
+    notificationid SERIAL PRIMARY KEY,
+    userid         INTEGER REFERENCES users(userid) ON DELETE CASCADE,
+    title          VARCHAR,
+    message        TEXT,
+    isread         BOOLEAN DEFAULT false,
+    createdat      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
-INSERT INTO RawMaterials (Name, CurrentStock, Unit, MinimumRequired) VALUES
-('Cotton Fabric', 500.0, 'meters', 50.0),
-('Polyester Thread', 1000.0, 'meters', 100.0);
+-- Audit Logs Table (system-wide operations)
+CREATE TABLE IF NOT EXISTS auditlogs (
+    logid      SERIAL PRIMARY KEY,
+    userid     INTEGER,
+    action     VARCHAR NOT NULL, -- e.g., 'USER_LOGIN', 'CREATE_ORDER'
+    entityname VARCHAR,          -- e.g., 'Orders', 'Users'
+    entityid   INTEGER,          -- ID of the affected record
+    details    TEXT,             -- JSON or descriptive summary of the action
+    ipaddress  VARCHAR,
+    createdat  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
-INSERT INTO Products (ProductName, Description, BaseMaterialID, MaterialQuantityPerUnit) VALUES
-('White T-Shirt', 'Standard cotton t-shirt', 1, 1.5);
-GO
+-- Seed Initial Data (passwords are 'admin123', 'worker123', 'buyer123')
+-- Run `node seed.js` instead if you prefer hashed seed users.
