@@ -10,6 +10,7 @@ import { TransitionView } from '../../src/components/v2/TransitionView';
 import { EmptyState } from '../../src/components/EmptyState';
 import { Tokens } from '../../src/theme/tokens';
 import { useToast } from '../../src/context/ToastContext';
+
 export default function AdminOrders() {
     const { showToast } = useToast();
     const router = useRouter();
