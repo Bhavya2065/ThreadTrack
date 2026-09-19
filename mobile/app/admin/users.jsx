@@ -103,7 +103,7 @@ export default function UserApprovalPortal() {
                             </TransitionView>
                             {pendingUsers.map((user, index) => (<TransitionView key={user.UserID} index={index + 1}>
                                     <GlassCard style={{ marginBottom: 16, padding: 16, borderRadius: 16 }}>
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <View style={{ flexDirection: isLargeScreen ? 'row' : 'column', justifyContent: 'space-between', alignItems: isLargeScreen ? 'center' : 'stretch' }}>
                                             <View style={{ flex: 1 }}>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 10 }}>
                                                     <View style={{ backgroundColor: theme.colors.primaryContainer, padding: 6, borderRadius: 8 }}>
@@ -125,7 +125,7 @@ export default function UserApprovalPortal() {
                                                 </View>
                                             </View>
 
-                                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                                            <View style={{ flexDirection: 'row', gap: 10, marginTop: isLargeScreen ? 0 : 12, justifyContent: 'flex-end' }}>
                                                 <Button mode="contained" onPress={() => handleApproval(user.UserID, user.Username, 'Approve')} loading={processingId === user.UserID} disabled={processingId !== null} buttonColor={theme.colors.primary} style={{ borderRadius: 10, elevation: 0 }} labelStyle={{ fontSize: 12, fontWeight: '700' }} compact>
                                                     Accept
                                                 </Button>

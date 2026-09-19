@@ -12,7 +12,7 @@ import { GlassCard } from '../../src/components/v2/GlassCard';
 import { TransitionView } from '../../src/components/v2/TransitionView';
 const MiniChart = ({ color }) => {
     const theme = useTheme();
-    const styles = createStyles(theme);
+    const styles = createStyles(theme, 0);
     const bars = [12, 18, 14, 22, 16];
     return (<View style={styles.miniChartContainer}>
             {bars.map((h, i) => (<View key={i} style={[styles.miniChartBar, { height: h, backgroundColor: color, opacity: 0.4 + (i * 0.12) }]}/>))}
@@ -20,7 +20,8 @@ const MiniChart = ({ color }) => {
 };
 const KPICard = ({ icon: Icon, label, value, color, index, trend, footer }) => {
     const theme = useTheme();
-    const styles = createStyles(theme);
+    const { width } = useWindowDimensions();
+    const styles = createStyles(theme, width);
     return (<TransitionView index={index} type="scale" style={styles.kpiCard}>
             <View style={[styles.kpiTopBar, { backgroundColor: color }]}/>
             <GlassCard style={styles.kpiCardInner}>
@@ -49,8 +50,8 @@ const KPICard = ({ icon: Icon, label, value, color, index, trend, footer }) => {
 export default function AdminAnalytics() {
     const router = useRouter();
     const theme = useTheme();
-    const styles = createStyles(theme);
     const { width } = useWindowDimensions();
+    const styles = createStyles(theme, width);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [analytics, setAnalytics] = useState(null);

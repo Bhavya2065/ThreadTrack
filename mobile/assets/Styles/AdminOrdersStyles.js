@@ -96,6 +96,8 @@ export const createStyles = (theme) => StyleSheet.create({
         justifyContent: 'flex-end',
         marginTop: 4, // Spacing above buttons
         gap: 8,
+        rowGap: 8,
+        flexWrap: 'wrap', // Wrap instead of overflowing on narrow screens
         minHeight: 40, // Ensure height for web
         alignItems: 'center',
     },

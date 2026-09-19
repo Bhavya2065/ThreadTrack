@@ -1,6 +1,12 @@
 import { StyleSheet, Platform } from 'react-native';
 import { Tokens } from '../../src/theme/tokens';
-export const createStyles = (theme) => StyleSheet.create({
+// Accepts the current window width so layouts adapt to any screen size.
+// Called without a width (legacy callers), it falls back to the old 2x2 grid.
+export const createStyles = (theme, width = 0) => {
+    const isDesktop = width >= 900;
+    const isPhone = width > 0 && width < 600;
+    const kpiCardWidth = isDesktop ? '24%' : isPhone ? '100%' : '48.5%';
+    return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -28,7 +34,7 @@ export const createStyles = (theme) => StyleSheet.create({
         width: '100%',
         maxWidth: 1200,
         alignSelf: 'center',
-        padding: Tokens.spacing.lg,
+        padding: isPhone ? Tokens.spacing.md : Tokens.spacing.lg,
     },
     kpiRow: {
         flexDirection: 'row',
@@ -37,7 +43,7 @@ export const createStyles = (theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
     },
     kpiCard: {
-        width: Platform.OS === 'web' ? '24%' : '48.5%',
+        width: kpiCardWidth,
         marginBottom: Tokens.spacing.md,
         borderRadius: 16,
         overflow: 'hidden',
@@ -74,7 +80,7 @@ export const createStyles = (theme) => StyleSheet.create({
         fontWeight: '700',
     },
     kpiValue: {
-        fontSize: 32,
+        fontSize: isDesktop ? 32 : 28,
         fontWeight: 'bold',
         color: theme.colors.onSurface,
         marginBottom: 2,
@@ -147,4 +153,5 @@ export const createStyles = (theme) => StyleSheet.create({
         marginBottom: Tokens.spacing.lg,
         paddingHorizontal: Tokens.spacing.sm,
     }
-});
+    });
+};
