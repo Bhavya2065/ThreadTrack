@@ -5,7 +5,8 @@ import { Tokens } from '../../src/theme/tokens';
 export const createStyles = (theme, width = 0) => {
     const isDesktop = width >= 900;
     const isPhone = width > 0 && width < 600;
-    const kpiCardWidth = isDesktop ? '24%' : isPhone ? '100%' : '48.5%';
+    // Max 2 cards per row on phone/tablet, 4 across on desktop.
+    const kpiCardWidth = isDesktop ? '24%' : '48.5%';
     return StyleSheet.create({
     container: {
         flex: 1,
