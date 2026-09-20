@@ -9,6 +9,7 @@ import { GlassCard } from '../src/components/v2/GlassCard';
 import { useToast } from '../src/context/ToastContext';
 import { CustomDropdown } from '../src/components/v2/CustomDropdown';
 import { ShoppingBag, HardHat, User } from 'lucide-react-native';
+
 export default function RegisterScreen() {
     const { showToast } = useToast();
     const [username, setUsername] = useState('');
@@ -147,88 +148,88 @@ export default function RegisterScreen() {
         }
     };
     const CriteriaItem = ({ label, met }) => (<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-      <Text style={{
+        <Text style={{
             color: met ? '#15AD66' : '#EF4444',
             fontSize: 14,
             marginRight: 8,
             fontWeight: 'bold'
         }}>
-        {met ? '✓' : '✕'}
-      </Text>
-      <Text style={{
+            {met ? '✓' : '✕'}
+        </Text>
+        <Text style={{
             color: met ? '#15AD66' : '#EF4444',
             fontSize: 13,
             fontWeight: met ? '600' : '400'
         }}>
-        {label}
-      </Text>
+            {label}
+        </Text>
     </View>);
     return (<View style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <View style={styles.logoWrapper}>
-              <View style={{ width: 40, height: 40, backgroundColor: theme.colors.primary, borderRadius: 8, transform: [{ rotate: '45deg' }] }}/>
-            </View>
-            <Text style={styles.title}>Join ThreadTrack</Text>
-            <Text style={styles.subtitle}>Start Your Supply Chain Journey</Text>
-          </View>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} showsVerticalScrollIndicator={false}>
+                <View style={styles.header}>
+                    <View style={styles.logoWrapper}>
+                        <View style={{ width: 40, height: 40, backgroundColor: theme.colors.primary, borderRadius: 8, transform: [{ rotate: '45deg' }] }} />
+                    </View>
+                    <Text style={styles.title}>Join ThreadTrack</Text>
+                    <Text style={styles.subtitle}>Start Your Supply Chain Journey</Text>
+                </View>
 
-          <GlassCard>
-            <TextInput label="Username" value={username} onChangeText={validateUsername} onFocus={() => {
-            setIsUsernameFocused(true);
-            setIsPasswordFocused(false);
-        }} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} autoCapitalize="none"/>
+                <GlassCard>
+                    <TextInput label="Username" value={username} onChangeText={validateUsername} onFocus={() => {
+                        setIsUsernameFocused(true);
+                        setIsPasswordFocused(false);
+                    }} mode="outlined" style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} autoCapitalize="none" />
 
-            {/* Username Checklist - Only shown when username field is focused */}
-            {isUsernameFocused && (<View style={{ marginTop: 8, marginBottom: 16, paddingLeft: 4 }}>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', marginBottom: 8, color: theme.colors.onSurface }}>
-                  Username must contain the following:
-                </Text>
-                <CriteriaItem label="Minimum 6 characters" met={usernameCriteria.length}/>
-                <CriteriaItem label="No blank space is allowed" met={usernameCriteria.noSpace}/>
-                <CriteriaItem label="Contain both letter and digit" met={usernameCriteria.letterAndDigit}/>
-              </View>)}
-            <TextInput label="Password" value={password} onChangeText={validatePassword} onFocus={() => {
-            setIsUsernameFocused(false);
-            setIsPasswordFocused(true);
-        }} mode="outlined" secureTextEntry={!showPassword} style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} right={<TextInput.Icon icon={showPassword ? "eye" : "eye-off"} onPress={() => setShowPassword(!showPassword)}/>}/>
+                    {/* Username Checklist - Only shown when username field is focused */}
+                    {isUsernameFocused && (<View style={{ marginTop: 8, marginBottom: 16, paddingLeft: 4 }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', marginBottom: 8, color: theme.colors.onSurface }}>
+                            Username must contain the following:
+                        </Text>
+                        <CriteriaItem label="Minimum 6 characters" met={usernameCriteria.length} />
+                        <CriteriaItem label="No blank space is allowed" met={usernameCriteria.noSpace} />
+                        <CriteriaItem label="Contain both letter and digit" met={usernameCriteria.letterAndDigit} />
+                    </View>)}
+                    <TextInput label="Password" value={password} onChangeText={validatePassword} onFocus={() => {
+                        setIsUsernameFocused(false);
+                        setIsPasswordFocused(true);
+                    }} mode="outlined" secureTextEntry={!showPassword} style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} right={<TextInput.Icon icon={showPassword ? "eye" : "eye-off"} onPress={() => setShowPassword(!showPassword)} />} />
 
-            {/* Password Checklist - Only shown when password field is focused */}
-            {isPasswordFocused && (<View style={{ marginTop: 8, marginBottom: 16, paddingLeft: 4 }}>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', marginBottom: 8, color: theme.colors.onSurface }}>
-                  Password must contain the following:
-                </Text>
-                <CriteriaItem label="A lowercase letter" met={passwordCriteria.lowercase}/>
-                <CriteriaItem label="A capital (uppercase) letter" met={passwordCriteria.uppercase}/>
-                <CriteriaItem label="A number" met={passwordCriteria.number}/>
-                <CriteriaItem label="At least one special character" met={passwordCriteria.specialChar}/>
-                <CriteriaItem label="No blank space is allowed" met={passwordCriteria.noSpace}/>
-                <CriteriaItem label="Minimum 8 characters" met={passwordCriteria.length}/>
-              </View>)}
+                    {/* Password Checklist - Only shown when password field is focused */}
+                    {isPasswordFocused && (<View style={{ marginTop: 8, marginBottom: 16, paddingLeft: 4 }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', marginBottom: 8, color: theme.colors.onSurface }}>
+                            Password must contain the following:
+                        </Text>
+                        <CriteriaItem label="A lowercase letter" met={passwordCriteria.lowercase} />
+                        <CriteriaItem label="A capital (uppercase) letter" met={passwordCriteria.uppercase} />
+                        <CriteriaItem label="A number" met={passwordCriteria.number} />
+                        <CriteriaItem label="At least one special character" met={passwordCriteria.specialChar} />
+                        <CriteriaItem label="No blank space is allowed" met={passwordCriteria.noSpace} />
+                        <CriteriaItem label="Minimum 8 characters" met={passwordCriteria.length} />
+                    </View>)}
 
-            <TextInput label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} onFocus={() => setIsPasswordFocused(false)} mode="outlined" secureTextEntry={!showConfirmPassword} style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} right={<TextInput.Icon icon={showConfirmPassword ? "eye" : "eye-off"} onPress={() => setShowConfirmPassword(!showConfirmPassword)}/>}/>
+                    <TextInput label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} onFocus={() => setIsPasswordFocused(false)} mode="outlined" secureTextEntry={!showConfirmPassword} style={styles.input} outlineColor={theme.colors.outline} activeOutlineColor={theme.colors.primary} textColor={theme.colors.onSurface} right={<TextInput.Icon icon={showConfirmPassword ? "eye" : "eye-off"} onPress={() => setShowConfirmPassword(!showConfirmPassword)} />} />
 
-            <CustomDropdown label="Requested Role" value={role} onSelect={setRole} options={roles.map(r => ({
-            label: r,
-            value: r,
-            icon: r.toLowerCase() === 'buyer' ? <ShoppingBag size={18} color="#64748b"/> :
-                r.toLowerCase() === 'worker' ? <HardHat size={18} color="#64748b"/> :
-                    <User size={18} color="#64748b"/>
-        }))}/>
+                    <CustomDropdown label="Requested Role" value={role} onSelect={setRole} options={roles.map(r => ({
+                        label: r,
+                        value: r,
+                        icon: r.toLowerCase() === 'buyer' ? <ShoppingBag size={18} color="#64748b" /> :
+                            r.toLowerCase() === 'worker' ? <HardHat size={18} color="#64748b" /> :
+                                <User size={18} color="#64748b" />
+                    }))} />
 
-            <Button mode="contained" onPress={() => handleRegister()} style={styles.signUpButton} labelStyle={styles.buttonLabel} loading={loading} disabled={loading}>
-              Sign Up
-            </Button>
+                    <Button mode="contained" onPress={() => handleRegister()} style={styles.signUpButton} labelStyle={styles.buttonLabel} loading={loading} disabled={loading}>
+                        Sign Up
+                    </Button>
 
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', marginTop: 8 }}>
-              <Text variant="labelSmall" style={styles.alreadyAccountLabel}>Already have an account?</Text>
-              <Button mode="text" onPress={() => router.replace('/')} labelStyle={{ fontSize: 14, fontWeight: 'bold' }} textColor={theme.colors.primary} compact>
-                Back to Login
-              </Button>
-            </View>
-          </GlassCard>
-        </ScrollView>
-      </KeyboardAvoidingView>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', marginTop: 8 }}>
+                        <Text variant="labelSmall" style={styles.alreadyAccountLabel}>Already have an account?</Text>
+                        <Button mode="text" onPress={() => router.replace('/')} labelStyle={{ fontSize: 14, fontWeight: 'bold' }} textColor={theme.colors.primary} compact>
+                            Back to Login
+                        </Button>
+                    </View>
+                </GlassCard>
+            </ScrollView>
+        </KeyboardAvoidingView>
     </View>);
 }
